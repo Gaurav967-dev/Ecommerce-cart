@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { SessionProvider } from "next-auth/react";
+
 import "./globals.css";
 import { ShopProvider } from "@/context/ShopContext";
 import Navbar from "@/components/Navbar";
@@ -18,16 +20,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ShopProvider>
+        <SessionProvider>
+          <ShopProvider>
 
-          <Suspense fallback={null}>
-            <Navbar />
-          </Suspense>
+            <Suspense fallback={null}>
+              <Navbar />
+            </Suspense>
 
-          {children}
+            {children}
 
-          <Footer />
-        </ShopProvider>
+            <Footer />
+          </ShopProvider>
+        </SessionProvider>
       </body>
     </html>
   );

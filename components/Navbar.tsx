@@ -2,22 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import {
-  usePathname,
-  useRouter,
-  useSearchParams,
-} from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import {
-  HomeIcon,
-  LayoutGridIcon,
-  CartIcon,
-  MenuIcon,
-  XIcon,
-  HeartIcon,
-} from "lucide-animated";
+import { useSession, signOut } from "next-auth/react";
 
-import { Search } from "lucide-react";
+import { HomeIcon, LayoutGridIcon, CartIcon, MenuIcon, XIcon, HeartIcon } from "lucide-animated";
+
+import { Search, User } from "lucide-react";
 
 import { useShop } from "@/context/ShopContext";
 
@@ -29,6 +20,8 @@ export default function Navbar() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  const { data: session } = useSession();
+
   const { wishlist, cart } = useShop();
 
   const cartCount = cart.reduce(
@@ -36,8 +29,7 @@ export default function Navbar() {
     0
   );
 
-  const activeCategory =
-    searchParams.get("category") || "";
+  const activeCategory = searchParams.get("category") || "";
 
   function closeMenu() {
     setIsMenuOpen(false);
@@ -49,16 +41,13 @@ export default function Navbar() {
     }
 
     return (
-      pathname === path ||
-      pathname.startsWith(`${path}/`)
+      pathname === path || pathname.startsWith(`${path}/`)
     );
   }
 
   function isCategoryActive(category: string) {
     return (
-      pathname === "/shop" &&
-      activeCategory.toLowerCase() ===
-        category.toLowerCase()
+      pathname === "/shop" && activeCategory.toLowerCase() === category.toLowerCase()
     );
   }
 
@@ -71,7 +60,7 @@ export default function Navbar() {
 
     if (!value) {
       router.push("/shop");
-      setIsMenuOpen(false);
+      closeMenu();
       return;
     }
 
@@ -79,16 +68,27 @@ export default function Navbar() {
       `/shop?search=${encodeURIComponent(value)}`
     );
 
-    setIsMenuOpen(false);
+    closeMenu();
+  }
+
+  async function handleSignOut() {
+    closeMenu();
+
+    await signOut({
+      redirect: false,
+    });
+    
+    router.replace("/");
+    router.refresh();
   }
 
   return (
-    <>
+    <div className="sticky top-0 z-50">
       {/* =========================================
           ANNOUNCEMENT BAR
       ========================================== */}
 
-      <div className="bg-black text-white text-center text-xs sm:text-sm py-2 px-4">
+      <div className="bg-black px-4 py-2 text-center text-xs text-white sm:text-sm">
         Free shipping on orders above ₹999
       </div>
 
@@ -96,27 +96,20 @@ export default function Navbar() {
           HEADER
       ========================================== */}
 
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="border-b bg-background/95 backdrop-blur">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
           {/* =====================================
               MAIN HEADER
           ====================================== */}
 
-          <div className="h-20 flex items-center justify-between gap-4">
+          <div className="flex h-20 items-center justify-between gap-4">
 
             {/* Logo */}
             <Link
               href="/"
               onClick={closeMenu}
-              className="
-                shrink-0
-                text-xl
-                sm:text-2xl
-                lg:text-3xl
-                font-bold
-                tracking-tight
-              "
+              className="shrink-0 text-xl font-bold tracking-tight sm:text-2xl lg:text-3xl"
             >
               E-Commerce
             </Link>
@@ -124,53 +117,28 @@ export default function Navbar() {
             {/* Desktop Search */}
             <form
               onSubmit={handleSearchSubmit}
-              className="
-                hidden
-                lg:flex
-                flex-1
-                max-w-xl
-                mx-6
-              "
+              className="hidden max-w-xl flex-1 lg:flex mx-6"
             >
               <div className="relative w-full">
                 <Search
                   size={18}
-                  className="
-                    absolute
-                    left-4
-                    top-1/2
-                    -translate-y-1/2
-                    text-muted-foreground
-                  "
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground"
                 />
 
                 <input
                   type="search"
                   value={search}
-                  onChange={(event) =>
-                    setSearch(event.target.value)
-                  }
+                  onChange={(event) => setSearch(event.target.value)}
                   placeholder="Search products..."
-                  className="
-                    w-full
-                    rounded-full
-                    border
-                    bg-muted/30
-                    py-3
-                    pl-11
-                    pr-4
-                    text-sm
-                    outline-none
-                    transition
-                    focus:border-primary
-                    focus:bg-background
-                  "
+                  className="w-full rounded-full border bg-muted/30 py-3 pl-11 pr-4 text-sm outline-none transition focus:border-primary focus:bg-background"
                 />
               </div>
             </form>
 
-            {/* Desktop Cart + Wishlist */}
-            <div className="hidden md:flex items-center gap-2">
+            {/* Desktop Actions */}
+            <div className="hidden items-center gap-2 md:flex">
+
+              {/* Cart */}
               <HeaderAction
                 href="/cart"
                 icon={<CartIcon size={22} />}
@@ -179,6 +147,7 @@ export default function Navbar() {
                 active={isActive("/cart")}
               />
 
+              {/* Wishlist */}
               <HeaderAction
                 href="/wishlist"
                 icon={<HeartIcon size={22} />}
@@ -186,24 +155,53 @@ export default function Navbar() {
                 count={wishlist.length}
                 active={isActive("/wishlist")}
               />
+
+              {/* Authentication */}
+              {session?.user ? (
+                <>
+                  <Link
+                    href="/account"
+                    className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition hover:bg-muted"
+                  >
+                    <User className="h-4 w-4" />
+
+                    <span>
+                      Hi, {session.user.name || "User"}
+                    </span>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    className="rounded-full border px-4 py-2 text-sm font-medium transition hover:bg-muted"
+                  >
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/signin"
+                    className="rounded-full px-4 py-2 text-sm font-medium transition hover:bg-muted"
+                  >
+                    Sign In
+                  </Link>
+
+                  <Link
+                    href="/signup"
+                    className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800"
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              )}
             </div>
 
-            {/* Mobile Menu Button */}
+            {/* Mobile Menu */}
             <button
               type="button"
-              onClick={() =>
-                setIsMenuOpen(
-                  (current) => !current
-                )
-              }
-              className="
-                md:hidden
-                rounded-full
-                border
-                p-2
-                hover:bg-muted
-                transition
-              "
+              onClick={() => setIsMenuOpen((current) => !current)}
+              className="rounded-full border p-2 transition hover:bg-muted md:hidden"
               aria-label="Toggle navigation menu"
             >
               {isMenuOpen ? (
@@ -218,7 +216,7 @@ export default function Navbar() {
               DESKTOP NAVIGATION
           ====================================== */}
 
-          <nav className="hidden md:flex items-center justify-center gap-2 pb-4">
+          <nav className="hidden items-center justify-center gap-2 pb-4 md:flex">
 
             <NavLink
               href="/"
@@ -281,7 +279,7 @@ export default function Navbar() {
           ====================================== */}
 
           {isMenuOpen && (
-            <div className="md:hidden border-t py-4">
+            <div className="border-t py-4 md:hidden">
 
               {/* Mobile Search */}
               <form
@@ -291,34 +289,15 @@ export default function Navbar() {
                 <div className="relative">
                   <Search
                     size={18}
-                    className="
-                      absolute
-                      left-4
-                      top-1/2
-                      -translate-y-1/2
-                      text-muted-foreground
-                    "
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground"
                   />
 
                   <input
                     type="search"
                     value={search}
-                    onChange={(event) =>
-                      setSearch(event.target.value)
-                    }
+                    onChange={(event) => setSearch(event.target.value)}
                     placeholder="Search products..."
-                    className="
-                      w-full
-                      rounded-full
-                      border
-                      bg-muted/30
-                      py-3
-                      pl-11
-                      pr-4
-                      text-sm
-                      outline-none
-                      focus:border-primary
-                    "
+                    className="w-full rounded-full border bg-muted/30 py-3 pl-11 pr-4 text-sm outline-none focus:border-primary"
                   />
                 </div>
               </form>
@@ -386,17 +365,57 @@ export default function Navbar() {
                   active={isActive("/cart")}
                   onClick={closeMenu}
                 />
+
+                {/* Mobile Authentication */}
+                {session?.user ? (
+                  <>
+                    <MobileNavLink
+                      href="/account"
+                      icon={<User className="h-5 w-5" />}
+                      label={`Hi, ${
+                        session.user.name || "User"
+                      }`}
+                      active={isActive("/account")}
+                      onClick={closeMenu}
+                    />
+
+                    <button
+                      type="button"
+                      onClick={handleSignOut}
+                      className="flex w-full items-center rounded-xl px-4 py-3 text-left font-medium transition hover:bg-muted"
+                    >
+                      Sign Out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <MobileNavLink
+                      href="/signin"
+                      label="Sign In"
+                      active={isActive("/signin")}
+                      onClick={closeMenu}
+                    />
+
+                    <Link
+                      href="/signup"
+                      onClick={closeMenu}
+                      className="rounded-xl bg-black px-4 py-3 font-medium text-white"
+                    >
+                      Sign Up
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           )}
         </div>
       </header>
-    </>
+    </div>
   );
 }
 
 /* =========================================
-   DESKTOP HEADER ACTION
+   HEADER ACTION
 ========================================= */
 
 interface HeaderActionProps {
@@ -417,15 +436,7 @@ function HeaderAction({
   return (
     <Link
       href={href}
-      className={`
-        flex
-        items-center
-        gap-2
-        rounded-full
-        px-4
-        py-2
-        text-sm
-        transition
+      className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm transition
         ${
           active
             ? "bg-primary text-primary-foreground"
@@ -439,15 +450,7 @@ function HeaderAction({
 
       {count !== undefined && count > 0 && (
         <span
-          className={`
-            min-w-5
-            h-5
-            rounded-full
-            text-xs
-            flex
-            items-center
-            justify-center
-            px-1
+          className={`flex min-w-5 h-5 items-center justify-center rounded-full px-1 text-xs
             ${
               active
                 ? "bg-primary-foreground text-primary"
@@ -484,16 +487,7 @@ function NavLink({
   return (
     <Link
       href={href}
-      className={`
-        flex
-        items-center
-        gap-2
-        rounded-full
-        px-4
-        py-2
-        text-sm
-        font-medium
-        transition
+      className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition
         ${
           active
             ? "bg-primary text-primary-foreground"
@@ -507,11 +501,7 @@ function NavLink({
 
       {count !== undefined && count > 0 && (
         <span
-          className={`
-            rounded-full
-            px-2
-            py-0.5
-            text-xs
+          className={`rounded-full px-2 py-0.5 text-xs
             ${
               active
                 ? "bg-primary-foreground text-primary"
@@ -551,14 +541,7 @@ function MobileNavLink({
     <Link
       href={href}
       onClick={onClick}
-      className={`
-        flex
-        items-center
-        justify-between
-        rounded-xl
-        px-4
-        py-3
-        transition
+      className={`flex items-center justify-between rounded-xl px-4 py-3 transition
         ${
           active
             ? "bg-primary text-primary-foreground"
@@ -573,18 +556,7 @@ function MobileNavLink({
 
       {count !== undefined && count > 0 && (
         <span
-          className="
-            min-w-5
-            h-5
-            rounded-full
-            bg-primary
-            text-primary-foreground
-            text-xs
-            flex
-            items-center
-            justify-center
-            px-1
-          "
+          className="flex min-w-5 h-5 items-center justify-center rounded-full bg-primary px-1 text-xs text-primary-foreground"
         >
           {count}
         </span>
