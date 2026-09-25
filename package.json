@@ -13,6 +13,7 @@
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.3.0",
+    "jose": "^6.2.12",
     "lucide-animated": "^1.0.5",
     "lucide-react": "^1.46.0",
     "motion": "^13.4.0",

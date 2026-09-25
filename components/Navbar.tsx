@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import { useSession, signOut } from "next-auth/react";
+import { useAuth } from "@/components/AuthProvider";
 
 import { HomeIcon, LayoutGridIcon, CartIcon, MenuIcon, XIcon, HeartIcon } from "lucide-animated";
 
@@ -20,7 +20,7 @@ export default function Navbar() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const { data: session } = useSession();
+  const { user, logout } = useAuth();
 
   const { wishlist, cart } = useShop();
 
@@ -30,7 +30,7 @@ export default function Navbar() {
   );
 
   const activeCategory = searchParams.get("category") || "";
-
+  
   function closeMenu() {
     setIsMenuOpen(false);
   }
@@ -74,9 +74,7 @@ export default function Navbar() {
   async function handleSignOut() {
     closeMenu();
 
-    await signOut({
-      redirect: false,
-    });
+    await logout();
     
     router.replace("/");
     router.refresh();
@@ -157,23 +155,20 @@ export default function Navbar() {
               />
 
               {/* Authentication */}
-              {session?.user ? (
+              {user ? (
                 <>
                   <Link
                     href="/account"
                     className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition hover:bg-muted"
                   >
                     <User className="h-4 w-4" />
-
-                    <span>
-                      Hi, {session.user.name || "User"}
-                    </span>
+                    <span>Hi, {user.name || "User"}</span>
                   </Link>
-
+              
                   <button
                     type="button"
                     onClick={handleSignOut}
-                    className="rounded-full border px-4 py-2 text-sm font-medium transition hover:bg-muted"
+                    className="rounded-full border px-4 py-2 text-sm font-medium transition hover:bg-black hover:text-white"
                   >
                     Sign Out
                   </button>
@@ -182,14 +177,14 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/signin"
-                    className="rounded-full px-4 py-2 text-sm font-medium transition hover:bg-muted"
+                    className="rounded-full px-4 py-2 text-sm font-medium transition hover:bg-muted hover:scale-105"
                   >
                     Sign In
                   </Link>
-
+              
                   <Link
                     href="/signup"
-                    className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800"
+                    className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition hover:scale-105 hover:bg-gray-800"
                   >
                     Sign Up
                   </Link>
@@ -367,13 +362,13 @@ export default function Navbar() {
                 />
 
                 {/* Mobile Authentication */}
-                {session?.user ? (
+                {user ? (
                   <>
                     <MobileNavLink
                       href="/account"
                       icon={<User className="h-5 w-5" />}
                       label={`Hi, ${
-                        session.user.name || "User"
+                        user.name || "User"
                       }`}
                       active={isActive("/account")}
                       onClick={closeMenu}

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { SessionProvider } from "next-auth/react";
+import { AuthProvider } from "@/components/AuthProvider";
 
 import "./globals.css";
 import { ShopProvider } from "@/context/ShopContext";
@@ -20,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <SessionProvider>
+        <AuthProvider>
           <ShopProvider>
 
             <Suspense fallback={null}>
@@ -31,7 +31,7 @@ export default function RootLayout({
 
             <Footer />
           </ShopProvider>
-        </SessionProvider>
+        </AuthProvider>
       </body>
     </html>
   );
