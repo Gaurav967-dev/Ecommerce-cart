@@ -8,15 +8,28 @@ import { redirect } from "next/navigation";
 const sql = postgres(process.env.DATABASE_URL!);
 
 const RegisterSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  name: z
+    .string()
+    .min(2, "Name must be at least 2 characters"),
+
+  email: z
+    .string()
+    .email("Invalid email"),
+
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters"),
 });
 
+export type RegisterResult = {
+  success: boolean;
+  error?: string;
+  field?: "name" | "email" | "password";
+};
+
 export async function registerUser(
-  _prevState: string | undefined,
   formData: FormData
-): Promise<string | undefined> {
+): Promise<RegisterResult> {
   const validated = RegisterSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
@@ -24,16 +37,38 @@ export async function registerUser(
   });
 
   if (!validated.success) {
-    return (
-      validated.error.issues[0]?.message ??
-      "Invalid input"
-    );
+    const issue =
+      validated.error.issues[0];
+
+    const field =
+      issue?.path?.[0];
+
+    return {
+      success: false,
+      error:
+        issue?.message ??
+        "Invalid input",
+
+      field:
+        field === "name" ||
+        field === "email" ||
+        field === "password"
+          ? field
+          : undefined,
+    };
   }
 
-  const { name, email, password } = validated.data;
+  const {
+    name,
+    email,
+    password,
+  } = validated.data;
 
-  const normalizedEmail = email.toLowerCase().trim();
-  const trimmedName = name.trim();
+  const normalizedEmail =
+    email.toLowerCase().trim();
+
+  const trimmedName =
+    name.trim();
 
   try {
     const existingUsers = await sql`
@@ -44,13 +79,19 @@ export async function registerUser(
     `;
 
     if (existingUsers.length > 0) {
-      return "An account with this email already exists.";
+      return {
+        success: false,
+        error:
+          "An account with this email already exists.",
+        field: "email",
+      };
     }
 
-    const hashedPassword = await bcrypt.hash(
-      password,
-      10
-    );
+    const hashedPassword =
+      await bcrypt.hash(
+        password,
+        10
+      );
 
     await sql`
       INSERT INTO users (
@@ -64,11 +105,29 @@ export async function registerUser(
         ${hashedPassword}
       )
     `;
-  } catch (error) {
-    console.error("Registration error:", error);
+  } catch (error: any) {
+    console.error(
+      "Registration error:",
+      error
+    );
 
-    return "Failed to create account. Please try again.";
+    if (error?.code === "23505") {
+      return {
+        success: false,
+        error:
+          "An account with this email already exists.",
+        field: "email",
+      };
+    }
+
+    return {
+      success: false,
+      error:
+        "Failed to create account. Please try again.",
+    };
   }
 
-  redirect("/signin?registered=true");
+  redirect(
+    "/signin?registered=true"
+  );
 }

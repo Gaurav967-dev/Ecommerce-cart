@@ -1,36 +1,39 @@
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";
-import { randomUUID } from "crypto";
 
-const secret = process.env.JWT_SECRET;
+export const ACCESS_TOKEN_TTL_SECONDS = 2 * 60;
+export const REFRESH_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
 
-if (!secret) {
-  throw new Error("JWT_SECRET is not configured");
+const ISSUER = "ecommerce-app";
+const AUDIENCE = "ecommerce-user";
+
+type TokenType = "access" | "refresh";
+
+export type TokenUser = {
+  id: string | number;
+  name: string;
+  email: string;
+};
+
+export interface AppJwtPayload extends JWTPayload {
+  name: string;
+  email: string;
+  tokenType: TokenType;
 }
 
-const JWT_SECRET = new TextEncoder().encode(secret);
+function getJwtSecret() {
+  const secret = process.env.JWT_SECRET;
 
-export const JWT_ISSUER = "ecommerce-cart";
-export const JWT_AUDIENCE = "ecommerce-cart-users";
+  if (!secret) {
+    throw new Error("JWT_SECRET is not configured");
+  }
 
-export const ACCESS_TOKEN_TTL = 60;
-export const REFRESH_TOKEN_TTL = 7 * 24 * 60 * 60;
+  return new TextEncoder().encode(secret);
+}
 
-export type AuthTokenPayload = JWTPayload & {
-  email: string;
-  name: string;
-  tokenType: "access" | "refresh";
-};
-
-type UserForToken = {
-  id: number | string;
-  name: string;
-  email: string;
-};
-
-export async function createAccessToken(user: UserForToken) {
-  const jti = randomUUID();
-
-  const expiresAt = Date.now() + ACCESS_TOKEN_TTL * 1000;
+export async function createAccessToken(user: TokenUser) {
+  const now = Math.floor(Date.now() / 1000);
+  const exp = now + ACCESS_TOKEN_TTL_SECONDS;
+  const jti = crypto.randomUUID();
 
   const token = await new SignJWT({
     name: user.name,
@@ -43,23 +46,24 @@ export async function createAccessToken(user: UserForToken) {
     })
     .setSubject(String(user.id))
     .setJti(jti)
-    .setIssuedAt()
-    .setIssuer(JWT_ISSUER)
-    .setAudience(JWT_AUDIENCE)
-    .setExpirationTime(Math.floor(expiresAt / 1000))
-    .sign(JWT_SECRET);
+    .setIssuedAt(now)
+    .setIssuer(ISSUER)
+    .setAudience(AUDIENCE)
+    .setExpirationTime(exp)
+    .sign(getJwtSecret());
 
   return {
     token,
     jti,
-    expiresAt,
+    issuedAt: now,
+    expiresAt: exp,
   };
 }
 
-export async function createRefreshToken(user: UserForToken) {
-  const jti = randomUUID();
-
-  const expiresAt = Date.now() + REFRESH_TOKEN_TTL * 1000;
+export async function createRefreshToken(user: TokenUser) {
+  const now = Math.floor(Date.now() / 1000);
+  const exp = now + REFRESH_TOKEN_TTL_SECONDS;
+  const jti = crypto.randomUUID();
 
   const token = await new SignJWT({
     name: user.name,
@@ -72,51 +76,44 @@ export async function createRefreshToken(user: UserForToken) {
     })
     .setSubject(String(user.id))
     .setJti(jti)
-    .setIssuedAt()
-    .setIssuer(JWT_ISSUER)
-    .setAudience(JWT_AUDIENCE)
-    .setExpirationTime(Math.floor(expiresAt / 1000))
-    .sign(JWT_SECRET);
+    .setIssuedAt(now)
+    .setIssuer(ISSUER)
+    .setAudience(AUDIENCE)
+    .setExpirationTime(exp)
+    .sign(getJwtSecret());
 
   return {
     token,
     jti,
-    expiresAt,
+    issuedAt: now,
+    expiresAt: exp,
   };
 }
 
 export async function verifyAccessToken(token: string) {
-  const result = await jwtVerify<AuthTokenPayload>(
-    token,
-    JWT_SECRET,
-    {
-      issuer: JWT_ISSUER,
-      audience: JWT_AUDIENCE,
-      algorithms: ["HS256"],
-    }
-  );
+  const { payload } = await jwtVerify(token, getJwtSecret(), {
+    issuer: ISSUER,
+    audience: AUDIENCE,
+    algorithms: ["HS256"],
+  });
 
-  if (result.payload.tokenType !== "access") {
+  if (payload.tokenType !== "access") {
     throw new Error("Invalid access token");
   }
 
-  return result;
+  return payload as AppJwtPayload;
 }
 
 export async function verifyRefreshToken(token: string) {
-  const result = await jwtVerify<AuthTokenPayload>(
-    token,
-    JWT_SECRET,
-    {
-      issuer: JWT_ISSUER,
-      audience: JWT_AUDIENCE,
-      algorithms: ["HS256"],
-    }
-  );
+  const { payload } = await jwtVerify(token, getJwtSecret(), {
+    issuer: ISSUER,
+    audience: AUDIENCE,
+    algorithms: ["HS256"],
+  });
 
-  if (result.payload.tokenType !== "refresh") {
+  if (payload.tokenType !== "refresh") {
     throw new Error("Invalid refresh token");
   }
 
-  return result;
+  return payload as AppJwtPayload;
 }

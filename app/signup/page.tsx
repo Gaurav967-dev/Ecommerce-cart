@@ -1,21 +1,96 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
-import { User, Mail, Lock, ArrowRight } from "lucide-react";
+import {
+  FormEvent,
+  useRef,
+  useState,
+} from "react";
 
-import { registerUser } from "@/app/actions/auth";
+import {
+  User,
+  Mail,
+  Lock,
+  ArrowRight,
+} from "lucide-react";
+
+import {
+  registerUser,
+} from "@/app/actions/auth";
 
 export default function SignUpPage() {
-  const [errorMessage, formAction, isPending] = useActionState(
-    registerUser,
-    undefined
-  );
+  const [name, setName] =
+    useState("");
+
+  const [email, setEmail] =
+    useState("");
+
+  const [password, setPassword] =
+    useState("");
+
+  const [errorMessage, setErrorMessage] =
+    useState("");
+
+  const [isPending, setIsPending] =
+    useState(false);
+
+  const emailRef =
+    useRef<HTMLInputElement>(null);
+
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+
+    setErrorMessage("");
+    setIsPending(true);
+
+    const formData =
+      new FormData();
+
+    formData.set(
+      "name",
+      name
+    );
+
+    formData.set(
+      "email",
+      email
+    );
+
+    formData.set(
+      "password",
+      password
+    );
+
+    const result =
+      await registerUser(
+        formData
+      );
+
+    setIsPending(false);
+
+    if (!result.success) {
+      setErrorMessage(
+        result.error ??
+          "Failed to create account."
+      );
+
+      if (result.field === "email") {
+        setEmail("");
+
+        requestAnimationFrame(() => {
+          emailRef.current?.focus();
+        });
+      }
+    }
+  }
 
   return (
     <main className="min-h-[calc(100vh-105px)] bg-gray-50 px-4 py-10">
       <div className="mx-auto flex min-h-[calc(100vh-185px)] max-w-md items-center justify-center">
         <div className="w-full rounded-2xl border bg-white p-6 shadow-sm sm:p-8">
+
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-semibold tracking-tight">
               Create Account
@@ -26,7 +101,10 @@ export default function SignUpPage() {
             </p>
           </div>
 
-          <form action={formAction} className="space-y-5">
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-5"
+          >
             <div>
               <label
                 htmlFor="name"
@@ -43,6 +121,12 @@ export default function SignUpPage() {
                   name="name"
                   type="text"
                   placeholder="Enter your name"
+                  value={name}
+                  onChange={(event) =>
+                    setName(
+                      event.target.value
+                    )
+                  }
                   required
                   className="w-full rounded-xl border px-10 py-3 outline-none transition focus:border-black"
                 />
@@ -61,10 +145,17 @@ export default function SignUpPage() {
                 <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
 
                 <input
+                  ref={emailRef}
                   id="email"
                   name="email"
                   type="email"
                   placeholder="Enter your email"
+                  value={email}
+                  onChange={(event) =>
+                    setEmail(
+                      event.target.value
+                    )
+                  }
                   required
                   className="w-full rounded-xl border px-10 py-3 outline-none transition focus:border-black"
                 />
@@ -87,6 +178,12 @@ export default function SignUpPage() {
                   name="password"
                   type="password"
                   placeholder="Minimum 6 characters"
+                  value={password}
+                  onChange={(event) =>
+                    setPassword(
+                      event.target.value
+                    )
+                  }
                   required
                   minLength={6}
                   className="w-full rounded-xl border px-10 py-3 outline-none transition focus:border-black"
@@ -103,11 +200,15 @@ export default function SignUpPage() {
             <button
               type="submit"
               disabled={isPending}
-              className="flex mb-2 w-full items-center justify-center gap-2 rounded-xl bg-black px-5 py-3 font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mb-2 flex w-full items-center justify-center gap-2 rounded-xl bg-black px-5 py-3 font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isPending ? "Creating Account..." : "Create Account"}
+              {isPending
+                ? "Creating Account..."
+                : "Create Account"}
 
-              {!isPending && <ArrowRight className="h-5 w-5" />}
+              {!isPending && (
+                <ArrowRight className="h-5 w-5" />
+              )}
             </button>
           </form>
 
@@ -120,6 +221,7 @@ export default function SignUpPage() {
               Sign In
             </Link>
           </p>
+
         </div>
       </div>
     </main>

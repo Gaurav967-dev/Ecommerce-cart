@@ -1,204 +1,354 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
-type AuthUser = {
+type User = {
   id: string;
   name: string;
   email: string;
 };
 
-type JwtInfo = {
-  header: Record<string, unknown>;
-  payload: Record<string, unknown>;
-  hasSignature: boolean;
+type LoginResult = {
+  success: boolean;
+  error?: string;
 };
 
 type AuthContextType = {
-  user: AuthUser | null;
+  user: User | null;
   loading: boolean;
+
+  accessToken: string | null;
   accessTokenExpiresAt: number | null;
   refreshTokenExpiresAt: number | null;
+
   lastRefreshAt: number | null;
-  jwt: JwtInfo | null;
-  reload: () => Promise<void>;
+
+  login: (
+    email: string,
+    password: string
+  ) => Promise<LoginResult>;
+
   logout: () => Promise<void>;
+
   refreshToken: () => Promise<boolean>;
+
+  authFetch: (
+    input: RequestInfo | URL,
+    init?: RequestInit
+  ) => Promise<Response>;
 };
 
-const AuthContext =
-  createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({
   children,
 }: {
   children: ReactNode;
 }) {
-  const [user, setUser] =
-    useState<AuthUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   const [loading, setLoading] = useState(true);
 
-  const [accessTokenExpiresAt, setAccessTokenExpiresAt] =
-    useState<number | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
 
-  const [refreshTokenExpiresAt, setRefreshTokenExpiresAt] =
-    useState<number | null>(null);
+  const [accessTokenExpiresAt, setAccessTokenExpiresAt] = useState<number | null>(null);
 
-  const [lastRefreshAt, setLastRefreshAt] =
-    useState<number | null>(null);
+  const [refreshTokenExpiresAt, setRefreshTokenExpiresAt] = useState<number | null>(null);
 
-  const [jwt, setJwt] =
-    useState<JwtInfo | null>(null);
+  const [lastRefreshAt, setLastRefreshAt] = useState<number | null>(null);
 
-  const loadSession = useCallback(
-    async (allowRefresh = true) => {
-      try {
-        const response = await fetch(
-          "/api/auth/me",
-          {
-            cache: "no-store",
-          }
-        );
+  const accessTokenRef = useRef<string | null>(null);
 
-        if (response.ok) {
-          const data = await response.json();
+  const refreshPromiseRef = useRef<Promise<boolean> | null>(null);
 
-          setUser(data.user);
-          setAccessTokenExpiresAt(
-            data.accessTokenExpiresAt
-          );
-          setRefreshTokenExpiresAt(
-            data.refreshTokenExpiresAt
-          );
-          setJwt(data.jwt);
+  const setNewAccessToken = useCallback(
+    (
+      token: string | null,
+      expiresAt: number | null
+    ) => {
+      accessTokenRef.current = token;
 
-          return;
-        }
+      setAccessToken(token);
 
-        if (
-          response.status === 401 &&
-          allowRefresh
-        ) {
-          const refreshResponse = await fetch(
-            "/api/auth/refresh",
-            {
-              method: "POST",
-            }
-          );
-
-          if (refreshResponse.ok) {
-            setLastRefreshAt(Date.now());
-
-            await loadSession(false);
-
-            return;
-          }
-        }
-
-        setUser(null);
-        setAccessTokenExpiresAt(null);
-        setRefreshTokenExpiresAt(null);
-        setJwt(null);
-      } catch {
-        setUser(null);
-      }
+      setAccessTokenExpiresAt(expiresAt);
     },
     []
   );
 
-  const reload = useCallback(async () => {
-    setLoading(true);
+  const clearAuth = useCallback(() => {
+    setUser(null);
 
-    await loadSession(true);
+    setNewAccessToken(null, null);
 
-    setLoading(false);
-  }, [loadSession]);
+    setRefreshTokenExpiresAt(null);
+  }, [setNewAccessToken]);
 
-  const refreshToken = useCallback(async () => {
-    try {
-      const response = await fetch(
-        "/api/auth/refresh",
-        {
-          method: "POST",
-        }
-      );
-
-      if (!response.ok) {
-        setUser(null);
-        return false;
+  const refreshToken =
+    useCallback(async (): Promise<boolean> => {
+      if (refreshPromiseRef.current) {
+        return refreshPromiseRef.current;
       }
 
-      setLastRefreshAt(Date.now());
+      const refreshPromise =
+        (async () => {
+          try {
+            const response = await fetch(
+              "/api/auth/refresh",
+              {
+                method: "POST",
+                credentials: "include",
+                cache: "no-store",
+              }
+            );
 
-      await loadSession(false);
+            if (!response.ok) {
+              clearAuth();
+              return false;
+            }
 
-      return true;
-    } catch {
-      setUser(null);
-      return false;
-    }
-  }, [loadSession]);
+            const data =
+              await response.json();
 
-  const logout = useCallback(async () => {
-    await fetch("/api/auth/logout", {
-      method: "POST",
-    });
+            if (!data.accessToken) {
+              clearAuth();
+              return false;
+            }
 
-    setUser(null);
-    setAccessTokenExpiresAt(null);
-    setRefreshTokenExpiresAt(null);
-    setLastRefreshAt(null);
-    setJwt(null);
-  }, []);
+            setNewAccessToken(
+              data.accessToken,
+              data.accessTokenExpiresAt
+            );
+
+            setRefreshTokenExpiresAt(
+              data.refreshTokenExpiresAt ??
+                null
+            );
+
+            if (data.user) {
+              setUser(data.user);
+            }
+
+            setLastRefreshAt(Date.now());
+
+            return true;
+          } catch (error) {
+            console.error(
+              "Refresh failed:",
+              error
+            );
+
+            clearAuth();
+
+            return false;
+          }
+        })();
+
+      refreshPromiseRef.current =
+        refreshPromise;
+
+      try {
+        return await refreshPromise;
+      } finally {
+        refreshPromiseRef.current = null;
+      }
+    }, [
+      clearAuth,
+      setNewAccessToken,
+    ]);
 
   useEffect(() => {
-    reload();
-  }, [reload]);
+    let active = true;
+
+    const initializeAuth = async () => {
+      await refreshToken();
+
+      if (active) {
+        setLoading(false);
+      }
+    };
+
+    void initializeAuth();
+
+    return () => {
+      active = false;
+    };
+  }, [refreshToken]);
 
   useEffect(() => {
-    if (!user || !accessTokenExpiresAt) {
+    if (!accessTokenExpiresAt) {
       return;
     }
 
-    const millisecondsUntilRefresh =
+    const REFRESH_EARLY_MS = 5 * 1000;
+
+    const delay =
       accessTokenExpiresAt -
       Date.now() -
-      5000;
+      REFRESH_EARLY_MS;
 
-    const timeout = setTimeout(
+    if (delay <= 0) {
+      void refreshToken();
+      return;
+    }
+
+    const timer = window.setTimeout(
       () => {
-        refreshToken();
+        void refreshToken();
       },
-      Math.max(millisecondsUntilRefresh, 1000)
+      delay
     );
 
-    return () => clearTimeout(timeout);
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, [
-    user,
     accessTokenExpiresAt,
     refreshToken,
   ]);
+
+  const login = useCallback(
+    async (
+      email: string,
+      password: string
+    ): Promise<LoginResult> => {
+      try {
+        const response = await fetch(
+          "/api/auth/login",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            credentials: "include",
+
+            body: JSON.stringify({
+              email,
+              password,
+            }),
+          }
+        );
+
+        const data =
+          await response.json();
+
+        if (!response.ok) {
+          return {
+            success: false,
+            error:
+              data.error ??
+              "Login failed",
+          };
+        }
+
+        setUser(data.user);
+
+        setNewAccessToken(
+          data.accessToken,
+          data.accessTokenExpiresAt
+        );
+
+        setRefreshTokenExpiresAt(
+          data.refreshTokenExpiresAt ??
+            null
+        );
+
+        return {
+          success: true,
+        };
+      } catch {
+        return {
+          success: false,
+          error: "Unable to login",
+        };
+      }
+    },
+    [setNewAccessToken]
+  );
+
+  const logout =
+    useCallback(async () => {
+      try {
+        await fetch(
+          "/api/auth/logout",
+          {
+            method: "POST",
+            credentials: "include",
+          }
+        );
+      } finally {
+        clearAuth();
+
+        setLastRefreshAt(null);
+      }
+    }, [clearAuth]);
+
+  const authFetch =
+    useCallback(
+      async (
+        input: RequestInfo | URL,
+        init: RequestInit = {}
+      ) => {
+        if (!accessTokenRef.current) {
+          await refreshToken();
+        }
+
+        const makeRequest = async () => {
+          const headers =
+            new Headers(init.headers);
+
+          const token =
+            accessTokenRef.current;
+
+          if (token) {
+            headers.set(
+              "Authorization",
+              `Bearer ${token}`
+            );
+          }
+
+          return fetch(input, {
+            ...init,
+            headers,
+          });
+        };
+
+        let response =
+          await makeRequest();
+
+        if (response.status === 401) {
+          const refreshed =
+            await refreshToken();
+
+          if (refreshed) {
+            response =
+              await makeRequest();
+          }
+        }
+
+        return response;
+      },
+      [refreshToken]
+    );
 
   return (
     <AuthContext.Provider
       value={{
         user,
         loading,
+
+        accessToken,
         accessTokenExpiresAt,
         refreshTokenExpiresAt,
+
         lastRefreshAt,
-        jwt,
-        reload,
+
+        login,
         logout,
         refreshToken,
+        authFetch,
       }}
     >
       {children}
@@ -207,7 +357,8 @@ export function AuthProvider({
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
+  const context =
+    useContext(AuthContext);
 
   if (!context) {
     throw new Error(

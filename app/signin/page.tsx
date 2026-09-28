@@ -9,7 +9,7 @@ import { useAuth } from "@/components/AuthProvider";
 
 export default function SignInPage() {
   const router = useRouter();
-  const { reload } = useAuth();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,47 +18,30 @@ export default function SignInPage() {
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(
-    event: FormEvent<HTMLFormElement>
+    event: React.FormEvent
   ) {
     event.preventDefault();
 
-    setError("");
     setLoading(true);
+    setError("");
 
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      });
+    const result = await login(
+      email,
+      password
+    );
 
-      const data = await response.json();
+    setLoading(false);
 
-      if (!response.ok) {
-        setError(
-          data.message ||
-            "Invalid email or password."
-        );
-
-        return;
-      }
-
-      await reload();
-
-      router.replace("/");
-      router.refresh();
-    } catch {
+    if (!result.success) {
       setError(
-        "Unable to sign in. Please try again."
+        result.error ??
+          "Unable to sign in"
       );
-    } finally {
-      setLoading(false);
+
+      return;
     }
+
+    router.replace("/account");
   }
 
   return (

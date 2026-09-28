@@ -1,96 +1,149 @@
-import { cookies } from "next/headers";
-import postgres from "postgres";
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
+
+import sql from "@/lib/db";
 
 import {
   createAccessToken,
   createRefreshToken,
   verifyRefreshToken,
-  ACCESS_TOKEN_TTL,
-  REFRESH_TOKEN_TTL,
+  REFRESH_TOKEN_TTL_SECONDS,
 } from "@/lib/jwt";
 
-const sql = postgres(process.env.DATABASE_URL!);
-
-export async function POST() {
+export async function POST(
+  request: NextRequest
+) {
   try {
-    const cookieStore = await cookies();
-
-    const refreshToken = cookieStore.get("refresh_token")?.value;
+    const refreshToken =
+      request.cookies.get("refresh_token")?.value;
 
     if (!refreshToken) {
-      return Response.json(
-        { message: "Refresh token missing." },
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Refresh token missing",
+        },
         { status: 401 }
       );
     }
 
-    const { payload } = await verifyRefreshToken(refreshToken);
+    let payload;
 
-    const jti = payload.jti;
-    const email = payload.email;
-
-    if (!jti || !email || !payload.sub) {
-      return Response.json(
-        { message: "Invalid refresh token." },
+    try {
+      payload =
+        await verifyRefreshToken(refreshToken);
+    } catch {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Invalid or expired refresh token",
+        },
         { status: 401 }
       );
     }
 
-    const storedTokens = await sql`
-      SELECT jti, email, expires_at, revoked_at
+    if (
+      !payload.jti ||
+      !payload.sub ||
+      !payload.email
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid refresh token payload",
+        },
+        { status: 401 }
+      );
+    }
+
+    const oldRefreshJti = payload.jti;
+    const userId = payload.sub;
+    const tokenEmail = payload.email;
+
+    /* Check refresh token JTI in PostgreSQL */
+    const tokens = await sql`
+      SELECT
+        jti,
+        email,
+        expires_at,
+        revoked_at
       FROM refresh_tokens
-      WHERE jti = ${jti}
+      WHERE jti = ${payload.jti}
         AND revoked_at IS NULL
         AND expires_at > NOW()
       LIMIT 1
     `;
 
-    if (storedTokens.length === 0) {
-      return Response.json(
-        { message: "Refresh token is invalid or already used." },
+    if (!tokens[0]) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Refresh token revoked or expired",
+        },
         { status: 401 }
       );
     }
 
+    /*
+     * Load current user.
+     */
     const users = await sql`
-      SELECT id, name, email
+      SELECT
+        id,
+        name,
+        email
       FROM users
-      WHERE email = ${email}
+      WHERE id = ${userId}
       LIMIT 1
     `;
 
-    if (users.length === 0) {
-      return Response.json(
-        { message: "User not found." },
+    const user = users[0];
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "User not found",
+        },
         { status: 401 }
       );
     }
 
-    const user = users[0];
-
-    const newAccessToken = await createAccessToken({
-      id: user.id,
+    /*
+     * Generate brand-new access + refresh tokens.
+     */
+    const tokenUser = {
+      id: String(user.id),
       name: user.name,
       email: user.email,
-    });
+    };
 
-    const newRefreshToken = await createRefreshToken({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-    });
+    const newAccess =
+      await createAccessToken(tokenUser);
 
+    const newRefresh =
+      await createRefreshToken(tokenUser);
+
+    /*
+     * Atomic refresh-token rotation.
+     */
     await sql.begin(async (tx) => {
       const revoked = await tx`
         UPDATE refresh_tokens
         SET revoked_at = NOW()
-        WHERE jti = ${jti}
+        WHERE jti = ${oldRefreshJti}
           AND revoked_at IS NULL
         RETURNING jti
       `;
 
-      if (revoked.length === 0) {
-        throw new Error("REFRESH_TOKEN_ALREADY_USED");
+      if (revoked.length !== 1) {
+        throw new Error(
+          "Refresh token already used"
+        );
       }
 
       await tx`
@@ -100,59 +153,88 @@ export async function POST() {
           expires_at
         )
         VALUES (
-          ${newRefreshToken.jti},
+          ${newRefresh.jti},
           ${user.email},
-          ${new Date(newRefreshToken.expiresAt)}
+          ${
+            new Date(
+              newRefresh.expiresAt * 1000
+            )
+          }
         )
       `;
     });
 
-    cookieStore.set("access_token", newAccessToken.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: ACCESS_TOKEN_TTL,
-    });
-
-    cookieStore.set("refresh_token", newRefreshToken.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: REFRESH_TOKEN_TTL,
-    });
-
-    return Response.json({
+    const response = NextResponse.json({
       success: true,
-      accessTokenExpiresAt: newAccessToken.expiresAt,
-      refreshTokenExpiresAt: newRefreshToken.expiresAt,
-      rotated: true,
+
+      accessToken: newAccess.token,
+
+      accessTokenExpiresAt:
+        newAccess.expiresAt * 1000,
+
+      refreshTokenExpiresAt:
+        newRefresh.expiresAt * 1000,
+
+      accessTokenInfo: {
+        jti: newAccess.jti,
+        issuedAt: newAccess.issuedAt,
+        expiresAt: newAccess.expiresAt,
+      },
+
+      user: {
+        id: String(user.id),
+        name: user.name,
+        email: user.email,
+      },
     });
+
+    /*
+     * Refresh token remains secret from JS.
+     */
+    response.cookies.set(
+      "refresh_token",
+      newRefresh.token,
+      {
+        httpOnly: true,
+        secure:
+          process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: REFRESH_TOKEN_TTL_SECONDS,
+      }
+    );
+
+    /*
+     * Delete legacy access cookie.
+     */
+    response.cookies.set("access_token", "", {
+      httpOnly: true,
+      path: "/",
+      expires: new Date(0),
+    });
+
+    return response;
   } catch (error) {
     console.error("Refresh error:", error);
 
-    const cookieStore = await cookies();
-
-    cookieStore.set("access_token", "", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 0,
-    });
-
-    cookieStore.set("refresh_token", "", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 0,
-    });
-
-    return Response.json(
-      { message: "Refresh token expired or invalid." },
+    const response = NextResponse.json(
+      {
+        success: false,
+        error: "Unable to refresh token",
+      },
       { status: 401 }
     );
+
+    response.cookies.set(
+      "refresh_token",
+      "",
+      {
+        httpOnly: true,
+        path: "/",
+        expires: new Date(0),
+      }
+    );
+
+    return response;
   }
 }

@@ -82,24 +82,15 @@ export default function Navbar() {
 
   return (
     <div className="sticky top-0 z-50">
-      {/* =========================================
-          ANNOUNCEMENT BAR
-      ========================================== */}
 
       <div className="bg-black px-4 py-2 text-center text-xs text-white sm:text-sm">
         Free shipping on orders above ₹999
       </div>
 
-      {/* =========================================
-          HEADER
-      ========================================== */}
+      {/* HEADER */}
 
       <header className="border-b bg-background/95 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-
-          {/* =====================================
-              MAIN HEADER
-          ====================================== */}
 
           <div className="flex h-20 items-center justify-between gap-4">
 
@@ -207,9 +198,7 @@ export default function Navbar() {
             </button>
           </div>
 
-          {/* =====================================
-              DESKTOP NAVIGATION
-          ====================================== */}
+          {/* DESKTOP NAVIGATION */}
 
           <nav className="hidden items-center justify-center gap-2 pb-4 md:flex">
 
@@ -224,18 +213,13 @@ export default function Navbar() {
               href="/shop"
               icon={<LayoutGridIcon size={18} />}
               label="Shop"
-              active={
-                isActive("/shop") &&
-                !activeCategory
-              }
+              active={isActive("/shop") && !activeCategory}
             />
 
             <NavLink
               href="/shop?category=Electronics"
               label="Electronics"
-              active={isCategoryActive(
-                "Electronics"
-              )}
+              active={isCategoryActive("Electronics")}
             />
 
             <NavLink
@@ -247,9 +231,7 @@ export default function Navbar() {
             <NavLink
               href="/shop?category=Accessories"
               label="Accessories"
-              active={isCategoryActive(
-                "Accessories"
-              )}
+              active={isCategoryActive("Accessories")}
             />
 
             <NavLink
@@ -269,9 +251,7 @@ export default function Navbar() {
             />
           </nav>
 
-          {/* =====================================
-              MOBILE MENU
-          ====================================== */}
+          {/* MOBILE MENU */}
 
           {isMenuOpen && (
             <div className="border-t py-4 md:hidden">
@@ -311,19 +291,14 @@ export default function Navbar() {
                   href="/shop"
                   icon={<LayoutGridIcon size={20} />}
                   label="Shop"
-                  active={
-                    isActive("/shop") &&
-                    !activeCategory
-                  }
+                  active={isActive("/shop") && !activeCategory}
                   onClick={closeMenu}
                 />
 
                 <MobileNavLink
                   href="/shop?category=Electronics"
                   label="Electronics"
-                  active={isCategoryActive(
-                    "Electronics"
-                  )}
+                  active={isCategoryActive("Electronics")}
                   onClick={closeMenu}
                 />
 
@@ -337,9 +312,7 @@ export default function Navbar() {
                 <MobileNavLink
                   href="/shop?category=Accessories"
                   label="Accessories"
-                  active={isCategoryActive(
-                    "Accessories"
-                  )}
+                  active={isCategoryActive("Accessories")}
                   onClick={closeMenu}
                 />
 
@@ -367,9 +340,7 @@ export default function Navbar() {
                     <MobileNavLink
                       href="/account"
                       icon={<User className="h-5 w-5" />}
-                      label={`Hi, ${
-                        user.name || "User"
-                      }`}
+                      label={`Hi, ${ user.name || "User" }`}
                       active={isActive("/account")}
                       onClick={closeMenu}
                     />
@@ -409,9 +380,7 @@ export default function Navbar() {
   );
 }
 
-/* =========================================
-   HEADER ACTION
-========================================= */
+/* HEADER ACTION */
 
 interface HeaderActionProps {
   href: string;
@@ -433,9 +402,7 @@ function HeaderAction({
       href={href}
       className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm transition
         ${
-          active
-            ? "bg-primary text-primary-foreground"
-            : "hover:bg-muted"
+          active ? "bg-primary text-primary-foreground" : "hover:bg-muted"
         }
       `}
     >
@@ -447,9 +414,7 @@ function HeaderAction({
         <span
           className={`flex min-w-5 h-5 items-center justify-center rounded-full px-1 text-xs
             ${
-              active
-                ? "bg-primary-foreground text-primary"
-                : "bg-primary text-primary-foreground"
+              active ? "bg-primary-foreground text-primary" : "bg-primary text-primary-foreground"
             }
           `}
         >
@@ -460,9 +425,7 @@ function HeaderAction({
   );
 }
 
-/* =========================================
-   DESKTOP NAV LINK
-========================================= */
+/* DESKTOP NAV LINK */
 
 interface NavLinkProps {
   href: string;
@@ -484,9 +447,7 @@ function NavLink({
       href={href}
       className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition
         ${
-          active
-            ? "bg-primary text-primary-foreground"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
         }
       `}
     >
@@ -498,9 +459,7 @@ function NavLink({
         <span
           className={`rounded-full px-2 py-0.5 text-xs
             ${
-              active
-                ? "bg-primary-foreground text-primary"
-                : "bg-primary text-primary-foreground"
+              active ? "bg-primary-foreground text-primary" : "bg-primary text-primary-foreground"
             }
           `}
         >
@@ -511,9 +470,7 @@ function NavLink({
   );
 }
 
-/* =========================================
-   MOBILE NAV LINK
-========================================= */
+/* MOBILE NAV LINK */
 
 interface MobileNavLinkProps {
   href: string;
@@ -538,9 +495,7 @@ function MobileNavLink({
       onClick={onClick}
       className={`flex items-center justify-between rounded-xl px-4 py-3 transition
         ${
-          active
-            ? "bg-primary text-primary-foreground"
-            : "hover:bg-muted"
+          active ? "bg-primary text-primary-foreground" : "hover:bg-muted"
         }
       `}
     >
@@ -550,9 +505,7 @@ function MobileNavLink({
       </div>
 
       {count !== undefined && count > 0 && (
-        <span
-          className="flex min-w-5 h-5 items-center justify-center rounded-full bg-primary px-1 text-xs text-primary-foreground"
-        >
+        <span className="flex min-w-5 h-5 items-center justify-center rounded-full bg-primary px-1 text-xs text-primary-foreground">
           {count}
         </span>
       )}

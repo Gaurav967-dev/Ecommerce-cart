@@ -1,19 +1,20 @@
-import { cookies } from "next/headers";
-import postgres from "postgres";
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
 
+import sql from "@/lib/db";
 import { verifyRefreshToken } from "@/lib/jwt";
 
-const sql = postgres(process.env.DATABASE_URL!);
-
-export async function POST() {
-  const cookieStore = await cookies();
-
+export async function POST(
+  request: NextRequest
+) {
   const refreshToken =
-    cookieStore.get("refresh_token")?.value;
+    request.cookies.get("refresh_token")?.value;
 
   if (refreshToken) {
     try {
-      const { payload } =
+      const payload =
         await verifyRefreshToken(refreshToken);
 
       if (payload.jti) {
@@ -25,27 +26,39 @@ export async function POST() {
         `;
       }
     } catch {
-      // Token may already be expired.
+      /*
+       * Even if token is invalid/expired,
+       * still clear browser cookies.
+       */
     }
   }
 
-  cookieStore.set("access_token", "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  });
-
-  cookieStore.set("refresh_token", "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  });
-
-  return Response.json({
+  const response = NextResponse.json({
     success: true,
   });
+
+  response.cookies.set(
+    "refresh_token",
+    "",
+    {
+      httpOnly: true,
+      path: "/",
+      expires: new Date(0),
+    }
+  );
+
+  /*
+   * Remove old implementation cookie too.
+   */
+  response.cookies.set(
+    "access_token",
+    "",
+    {
+      httpOnly: true,
+      path: "/",
+      expires: new Date(0),
+    }
+  );
+
+  return response;
 }

@@ -1,54 +1,55 @@
-import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import postgres from "postgres";
-import { z } from "zod";
 
+import sql from "@/lib/db";
 import {
   createAccessToken,
   createRefreshToken,
-  ACCESS_TOKEN_TTL,
-  REFRESH_TOKEN_TTL,
+  REFRESH_TOKEN_TTL_SECONDS,
 } from "@/lib/jwt";
-
-const sql = postgres(process.env.DATABASE_URL!);
-
-const LoginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
-});
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const validated = LoginSchema.safeParse(body);
+    const email = String(body.email ?? "")
+      .trim()
+      .toLowerCase();
 
-    if (!validated.success) {
-      return Response.json(
-        { message: "Invalid email or password." },
+    const password = String(body.password ?? "");
+
+    if (!email || !password) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Email and password are required",
+        },
         { status: 400 }
       );
     }
 
-    const { email, password } = validated.data;
-
-    const normalizedEmail = email.toLowerCase().trim();
-
     const users = await sql`
-      SELECT id, name, email, password
+      SELECT
+        id,
+        name,
+        email,
+        password
       FROM users
-      WHERE email = ${normalizedEmail}
+      WHERE LOWER(email) = ${email}
       LIMIT 1
     `;
 
-    if (users.length === 0) {
-      return Response.json(
-        { message: "Invalid email or password." },
+    const user = users[0];
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid email or password",
+        },
         { status: 401 }
       );
     }
-
-    const user = users[0];
 
     const passwordValid = await bcrypt.compare(
       password,
@@ -56,23 +57,23 @@ export async function POST(request: Request) {
     );
 
     if (!passwordValid) {
-      return Response.json(
-        { message: "Invalid email or password." },
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid email or password",
+        },
         { status: 401 }
       );
     }
 
-    const accessToken = await createAccessToken({
-      id: user.id,
+    const tokenUser = {
+      id: String(user.id),
       name: user.name,
       email: user.email,
-    });
+    };
 
-    const refreshToken = await createRefreshToken({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-    });
+    const access = await createAccessToken(tokenUser);
+    const refresh = await createRefreshToken(tokenUser);
 
     await sql`
       INSERT INTO refresh_tokens (
@@ -81,45 +82,63 @@ export async function POST(request: Request) {
         expires_at
       )
       VALUES (
-        ${refreshToken.jti},
+        ${refresh.jti},
         ${user.email},
-        ${new Date(refreshToken.expiresAt)}
+        ${new Date(refresh.expiresAt * 1000)}
       )
     `;
 
-    const cookieStore = await cookies();
-
-    cookieStore.set("access_token", accessToken.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: ACCESS_TOKEN_TTL,
-    });
-
-    cookieStore.set("refresh_token", refreshToken.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: REFRESH_TOKEN_TTL,
-    });
-
-    return Response.json({
+    const response = NextResponse.json({
       success: true,
+
       user: {
         id: String(user.id),
         name: user.name,
         email: user.email,
       },
-      accessTokenExpiresAt: accessToken.expiresAt,
-      refreshTokenExpiresAt: refreshToken.expiresAt,
+
+      accessToken: access.token,
+
+      accessTokenExpiresAt:
+        access.expiresAt * 1000,
+
+      accessTokenExpiresIn: 10 * 60,
+
+      refreshTokenExpiresAt:
+        refresh.expiresAt * 1000,
     });
+
+    /*
+     * Only refresh token stays HttpOnly.
+     */
+    response.cookies.set(
+      "refresh_token",
+      refresh.token,
+      {
+        httpOnly: true,
+        secure:
+          process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: REFRESH_TOKEN_TTL_SECONDS,
+      }
+    );
+
+    response.cookies.set("access_token", "", {
+      httpOnly: true,
+      path: "/",
+      expires: new Date(0),
+    });
+
+    return response;
   } catch (error) {
     console.error("Login error:", error);
 
-    return Response.json(
-      { message: "Something went wrong while signing in." },
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Unable to login",
+      },
       { status: 500 }
     );
   }
