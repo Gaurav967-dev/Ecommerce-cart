@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -8,7 +8,7 @@ import { useAuth } from "@/components/AuthProvider";
 
 import { HomeIcon, LayoutGridIcon, CartIcon, MenuIcon, XIcon, HeartIcon } from "lucide-animated";
 
-import { Search, User } from "lucide-react";
+import { Search, User, Package, LogOut } from "lucide-react";
 
 import { useShop } from "@/context/ShopContext";
 import UserMenu from "@/components/UserMenu";
@@ -16,6 +16,12 @@ import UserMenu from "@/components/UserMenu";
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  const [signingOut, setSigningOut] = useState(false);
 
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -73,12 +79,22 @@ export default function Navbar() {
   }
 
   async function handleSignOut() {
-    closeMenu();
+    if (signingOut) {
+      return;
+    }
 
-    await logout();
-    
-    router.replace("/");
-    router.refresh();
+    setSigningOut(true);
+
+    try {
+      closeMenu();
+
+      await logout();
+
+      router.replace("/");
+      router.refresh();
+    } finally {
+      setSigningOut(false);
+    }
   }
 
   return (
@@ -133,7 +149,7 @@ export default function Navbar() {
                 href="/cart"
                 icon={<CartIcon size={22} />}
                 label="Cart"
-                count={cartCount}
+                count={mounted ? cartCount : 0}
                 active={isActive("/cart")}
               />
 
@@ -142,7 +158,7 @@ export default function Navbar() {
                 href="/wishlist"
                 icon={<HeartIcon size={22} />}
                 label="Wishlist"
-                count={wishlist.length}
+                count={mounted ? wishlist.length : 0}
                 active={isActive("/wishlist")}
               />
 
@@ -223,7 +239,7 @@ export default function Navbar() {
               href="/wishlist"
               icon={<HeartIcon size={18} />}
               label="Wishlist"
-              count={wishlist.length}
+              count={mounted ? wishlist.length : 0}
               active={isActive("/wishlist")}
             />
 
@@ -231,7 +247,7 @@ export default function Navbar() {
               href="/cart"
               icon={<CartIcon size={18} />}
               label="Cart"
-              count={cartCount}
+              count={mounted ? cartCount : 0}
               active={isActive("/cart")}
             />
           </nav>
@@ -305,7 +321,7 @@ export default function Navbar() {
                   href="/wishlist"
                   icon={<HeartIcon size={20} />}
                   label="Wishlist"
-                  count={wishlist.length}
+                  count={mounted ? wishlist.length : 0}
                   active={isActive("/wishlist")}
                   onClick={closeMenu}
                 />
@@ -314,7 +330,7 @@ export default function Navbar() {
                   href="/cart"
                   icon={<CartIcon size={20} />}
                   label="Cart"
-                  count={cartCount}
+                  count={mounted ? cartCount : 0}
                   active={isActive("/cart")}
                   onClick={closeMenu}
                 />
@@ -336,6 +352,7 @@ export default function Navbar() {
 
                     <MobileNavLink
                       href="/orders"
+                      icon={<Package className="h-5 w-5" />}
                       label="Orders"
                       active={isActive("/orders")}
                       onClick={closeMenu}
@@ -344,9 +361,12 @@ export default function Navbar() {
                     <button
                       type="button"
                       onClick={handleSignOut}
-                      className="flex w-full items-center rounded-xl px-4 py-3 text-left font-medium transition hover:bg-muted"
+                      disabled={signingOut}
+                      className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left font-medium transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      Sign Out
+                      <LogOut className="h-5 w-5" />
+
+                      <span>{signingOut ? "Signing out..." : "Sign Out"}</span>
                     </button>
                   </>
                 ) : (

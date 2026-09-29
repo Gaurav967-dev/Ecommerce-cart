@@ -2,22 +2,34 @@
 
 import Link from "next/link";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { User, ChevronDown, Package, LogOut } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 
 export default function UserMenu() {
     const { user, logout } = useAuth();
+    const [signingOut, setSigningOut] = useState(false);
 
     const router = useRouter();
 
     if (!user) return null;
 
     async function handleLogout() {
-        await logout();
+        if (signingOut) {
+            return;
+        }
 
-        router.replace("/");
-        router.refresh();
+        setSigningOut(true);
+
+        try {
+            await logout();
+
+            router.replace("/");
+            router.refresh();
+        } finally {
+            setSigningOut(false);
+        }
     }
 
     return (
@@ -52,11 +64,12 @@ export default function UserMenu() {
                 <button
                     type="button"
                     onClick={handleLogout}
-                    className="group/item flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-muted"
+                    disabled={signingOut}
+                    className="group/item flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     <LogOut className="h-5 w-5 transition-transform duration-300 group-hover/item:translate-x-1" />
 
-                    <span>Sign Out</span>
+                    <span>{signingOut ? "Signing out..." : "Sign Out"}</span>
                 </button>
             </div>
         </details>

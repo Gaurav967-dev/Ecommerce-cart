@@ -4,11 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-import {
-  User,
-  Mail,
-  ShoppingBag,
-} from "lucide-react";
+import { User, Mail, ShoppingBag, Package, ChevronRight } from "lucide-react";
 
 import AccountSignOut from "@/components/AccountSignOut";
 import { useAuth } from "@/components/AuthProvider";
@@ -45,10 +41,12 @@ export default function AccountPage() {
           <div className="mt-6 space-y-4">
             <div className="flex items-center gap-3">
               <User className="h-5 w-5 text-gray-500" />
+
               <div>
                 <p className="text-xs text-gray-500">
                   Name
                 </p>
+
                 <p className="font-medium">
                   {user.name}
                 </p>
@@ -57,15 +55,61 @@ export default function AccountPage() {
 
             <div className="flex items-center gap-3">
               <Mail className="h-5 w-5 text-gray-500" />
+
               <div>
                 <p className="text-xs text-gray-500">
                   Email
                 </p>
+                
                 <p className="font-medium">
                   {user.email}
                 </p>
               </div>
             </div>
+          </div>
+
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            <Link
+              href="/profile"
+              className="group rounded-2xl border bg-white p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
+            >
+              <div className="flex items-start justify-between">
+                <div className="rounded-xl bg-gray-100 p-3">
+                  <User className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
+                </div>
+
+                <ChevronRight className="h-5 w-5 text-gray-400 transition-transform duration-300 group-hover:translate-x-1" />
+              </div>
+
+              <h2 className="mt-4 font-semibold">
+                My Profile
+              </h2>
+
+              <p className="mt-1 text-sm text-gray-500">
+                View and update your personal information.
+              </p>
+            </Link>
+
+            <Link
+              href="/orders"
+              className="group rounded-2xl border bg-white p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
+            >
+              <div className="flex items-start justify-between">
+                <div className="rounded-xl bg-gray-100 p-3">
+                  <Package className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
+                </div>
+
+                <ChevronRight className="h-5 w-5 text-gray-400 transition-transform duration-300 group-hover:translate-x-1" />
+              </div>
+
+              <h2 className="mt-4 font-semibold">
+                My Orders
+              </h2>
+
+              <p className="mt-1 text-sm text-gray-500">
+                View your previous and current orders.
+              </p>
+            </Link>
           </div>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">

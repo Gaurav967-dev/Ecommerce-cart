@@ -17,6 +17,7 @@ export default function OrdersPage() {
 
     const [orders, setOrders] = useState<Order[]>([]);
     const [ordersLoading, setOrdersLoading] = useState(true);
+    const [ordersError, setOrdersError] = useState("");
 
     useEffect(() => {
         if (!user) {
@@ -25,6 +26,8 @@ export default function OrdersPage() {
         }
 
         async function loadOrders() {
+            setOrdersError("");
+
             try {
                 const response = await authFetch(
                     "/api/orders",
@@ -33,13 +36,19 @@ export default function OrdersPage() {
                     }
                 );
 
+                const data = await response.json();
+
                 if (!response.ok) {
+                    setOrdersError(data.error ?? "Unable to load orders");
+
                     return;
                 }
 
-                const data = await response.json();
-
                 setOrders(data.orders ?? []);
+            } catch (error) {
+                console.error("Failed to load orders:", error);
+
+                setOrdersError("Something went wrong while loading your orders.");
             } finally {
                 setOrdersLoading(false);
             }
@@ -85,6 +94,12 @@ export default function OrdersPage() {
 
             {ordersLoading ? (
                 <p>Loading orders...</p>
+            ) : ordersError ? (
+                <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
+                    <p className="text-sm text-red-600">
+                        {ordersError}
+                    </p>
+                </div>
             ) : orders.length === 0 ? (
                 <div className="rounded-2xl border p-8 text-center">
                     <p>You don't have any orders yet.</p>
