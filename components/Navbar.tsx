@@ -11,6 +11,7 @@ import { HomeIcon, LayoutGridIcon, CartIcon, MenuIcon, XIcon, HeartIcon } from "
 import { Search, User } from "lucide-react";
 
 import { useShop } from "@/context/ShopContext";
+import UserMenu from "@/components/UserMenu";
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -147,23 +148,7 @@ export default function Navbar() {
 
               {/* Authentication */}
               {user ? (
-                <>
-                  <Link
-                    href="/account"
-                    className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition hover:bg-muted"
-                  >
-                    <User className="h-4 w-4" />
-                    <span>Hi, {user.name || "User"}</span>
-                  </Link>
-              
-                  <button
-                    type="button"
-                    onClick={handleSignOut}
-                    className="rounded-full border px-4 py-2 text-sm font-medium transition hover:bg-black hover:text-white"
-                  >
-                    Sign Out
-                  </button>
-                </>
+                <UserMenu />
               ) : (
                 <>
                   <Link
@@ -337,11 +322,22 @@ export default function Navbar() {
                 {/* Mobile Authentication */}
                 {user ? (
                   <>
+                    <div className="px-4 py-2 text-sm font-semibold">
+                      Hi, {user.name || "User"}
+                    </div>
+
                     <MobileNavLink
-                      href="/account"
+                      href="/profile"
                       icon={<User className="h-5 w-5" />}
-                      label={`Hi, ${ user.name || "User" }`}
-                      active={isActive("/account")}
+                      label="Profile"
+                      active={isActive("/profile")}
+                      onClick={closeMenu}
+                    />
+
+                    <MobileNavLink
+                      href="/orders"
+                      label="Orders"
+                      active={isActive("/orders")}
                       onClick={closeMenu}
                     />
 

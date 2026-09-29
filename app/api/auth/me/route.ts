@@ -11,19 +11,15 @@ import sql from "@/lib/db";
 import { verifyAccessToken } from "@/lib/jwt";
 import { getBearerAccessToken } from "@/lib/bearer-token";
 
-export async function GET(
-  request: NextRequest
-) {
+export async function GET(request: NextRequest) {
   try {
-    const accessToken =
-      getBearerAccessToken(request);
+    const accessToken = getBearerAccessToken(request);
 
     if (!accessToken) {
       return NextResponse.json(
         {
           authenticated: false,
-          error:
-            "Bearer access token missing",
+          error: "Bearer access token missing",
         },
         { status: 401 }
       );
@@ -32,14 +28,12 @@ export async function GET(
     let payload;
 
     try {
-      payload =
-        await verifyAccessToken(accessToken);
+      payload = await verifyAccessToken(accessToken);
     } catch {
       return NextResponse.json(
         {
           authenticated: false,
-          error:
-            "Invalid or expired access token",
+          error: "Invalid or expired access token",
         },
         { status: 401 }
       );
@@ -56,13 +50,8 @@ export async function GET(
     }
 
     const users = await sql`
-      SELECT
-        id,
-        name,
-        email
-      FROM users
-      WHERE id = ${payload.sub}
-      LIMIT 1
+      SELECT id, name, email FROM users
+      WHERE id = ${payload.sub} LIMIT 1
     `;
 
     const user = users[0];
@@ -77,8 +66,7 @@ export async function GET(
       );
     }
 
-    const header =
-      decodeProtectedHeader(accessToken);
+    const header = decodeProtectedHeader(accessToken);
 
     return NextResponse.json({
       authenticated: true,

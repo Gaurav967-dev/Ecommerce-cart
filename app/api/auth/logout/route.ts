@@ -1,7 +1,4 @@
-import {
-  NextRequest,
-  NextResponse,
-} from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import sql from "@/lib/db";
 import { verifyRefreshToken } from "@/lib/jwt";
@@ -9,27 +6,20 @@ import { verifyRefreshToken } from "@/lib/jwt";
 export async function POST(
   request: NextRequest
 ) {
-  const refreshToken =
-    request.cookies.get("refresh_token")?.value;
+  const refreshToken = request.cookies.get("refresh_token")?.value;
 
   if (refreshToken) {
     try {
-      const payload =
-        await verifyRefreshToken(refreshToken);
+      const payload = await verifyRefreshToken(refreshToken);
 
       if (payload.jti) {
         await sql`
-          UPDATE refresh_tokens
-          SET revoked_at = NOW()
-          WHERE jti = ${payload.jti}
-            AND revoked_at IS NULL
+          UPDATE refresh_tokens SET revoked_at = NOW()
+          WHERE jti = ${payload.jti} AND revoked_at IS NULL
         `;
       }
     } catch {
-      /*
-       * Even if token is invalid/expired,
-       * still clear browser cookies.
-       */
+      /* Even if token is invalid/expired, still clear browser cookies. */
     }
   }
 
@@ -47,9 +37,6 @@ export async function POST(
     }
   );
 
-  /*
-   * Remove old implementation cookie too.
-   */
   response.cookies.set(
     "access_token",
     "",

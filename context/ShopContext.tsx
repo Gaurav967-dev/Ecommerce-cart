@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useCallback,
-  ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 
 import { Product } from "@/types/product";
 import { CartItem } from "@/types/cart";
@@ -27,9 +20,7 @@ interface ShopContextType {
   addToRecentlyViewed: (product: Product) => void;
 }
 
-const ShopContext = createContext<ShopContextType | undefined>(
-  undefined
-);
+const ShopContext = createContext<ShopContextType | undefined>(undefined);
 
 export function ShopProvider({
   children,
@@ -44,9 +35,7 @@ export function ShopProvider({
   const [wishlistLoaded, setWishlistLoaded] = useState(false);
   const [cartLoaded, setCartLoaded] = useState(false);
 
-  // ==========================================
   // WISHLIST - LOAD FROM LOCAL STORAGE
-  // ==========================================
 
   useEffect(() => {
     const savedWishlist = localStorage.getItem("wishlist");
@@ -59,10 +48,7 @@ export function ShopProvider({
           setWishlist(parsedWishlist);
         }
       } catch (error) {
-        console.error(
-          "Invalid wishlist data:",
-          error
-        );
+        console.error("Invalid wishlist data:", error);
 
         localStorage.removeItem("wishlist");
       }
@@ -71,9 +57,7 @@ export function ShopProvider({
     setWishlistLoaded(true);
   }, []);
 
-  // ==========================================
   // WISHLIST - SAVE TO LOCAL STORAGE
-  // ==========================================
 
   useEffect(() => {
     if (!wishlistLoaded) {
@@ -86,9 +70,7 @@ export function ShopProvider({
     );
   }, [wishlist, wishlistLoaded]);
 
-  // ==========================================
   // CART - LOAD FROM COOKIE
-  // ==========================================
 
   useEffect(() => {
     const cartCookie = document.cookie
@@ -103,64 +85,48 @@ export function ShopProvider({
       );
 
       try {
-        const decodedCart =
-          decodeURIComponent(cartData);
+        const decodedCart = decodeURIComponent(cartData);
 
         const savedCart = JSON.parse(decodedCart);
 
         if (Array.isArray(savedCart)) {
           setCart(savedCart);
         } else {
-          document.cookie =
-            "cart=; max-age=0; path=/";
+          document.cookie = "cart=; max-age=0; path=/";
         }
       } catch (error) {
-        console.error(
-          "Invalid cart cookie:",
-          error
-        );
+        console.error("Invalid cart cookie:", error);
 
-        document.cookie =
-          "cart=; max-age=0; path=/";
+        document.cookie = "cart=; max-age=0; path=/";
       }
     }
 
     setCartLoaded(true);
   }, []);
 
-  // ==========================================
   // CART - SAVE TO COOKIE
-  // ==========================================
 
   function saveCartToCookie(
     cartItems: CartItem[]
   ) {
     if (cartItems.length === 0) {
-      document.cookie =
-        "cart=; max-age=0; path=/";
+      document.cookie = "cart=; max-age=0; path=/";
 
       return;
     }
 
-    const encodedCart = encodeURIComponent(
-      JSON.stringify(cartItems)
-    );
+    const encodedCart = encodeURIComponent(JSON.stringify(cartItems));
 
-    document.cookie =
-      `cart=${encodedCart}; max-age=86400; path=/`;
+    document.cookie = `cart=${encodedCart}; max-age=86400; path=/`;
   }
 
   // Load from Session Storage
   useEffect(() => {
-    const savedRecentlyViewed =
-        sessionStorage.getItem(
-          "recentlyViewed"
-        );
+    const savedRecentlyViewed = sessionStorage.getItem("recentlyViewed");
 
     if (savedRecentlyViewed) {
       try {
-        const parsedRecentlyViewed =
-          JSON.parse(savedRecentlyViewed);
+        const parsedRecentlyViewed = JSON.parse(savedRecentlyViewed);
 
         if (Array.isArray(parsedRecentlyViewed)) {
           setRecentlyViewed(
@@ -168,14 +134,9 @@ export function ShopProvider({
           );
         }
       } catch (error) {
-        console.error(
-          "Invalid recently viewed data:",
-          error
-        );
+        console.error("Invalid recently viewed data:", error);
 
-        sessionStorage.removeItem(
-          "recentlyViewed"
-        );
+        sessionStorage.removeItem("recentlyViewed");
       }
     }
 
@@ -194,17 +155,11 @@ export function ShopProvider({
       );
     }, [recentlyViewed, recentlyViewedLoaded]);
 
-  // ==========================================
   // WISHLIST FUNCTIONS
-  // ==========================================
 
   function addToWishlist(product: Product) {
     setWishlist((currentWishlist) => {
-      if (
-        currentWishlist.some(
-          (item) => item.id === product.id
-        )
-      ) {
+      if (currentWishlist.some((item) => item.id === product.id)) {
         return currentWishlist;
       }
 
@@ -212,9 +167,7 @@ export function ShopProvider({
     });
   }
 
-  function removeFromWishlist(
-    productId: number
-  ) {
+  function removeFromWishlist(productId: number) {
     setWishlist((currentWishlist) =>
       currentWishlist.filter(
         (item) => item.id !== productId
@@ -222,14 +175,10 @@ export function ShopProvider({
     );
   }
 
-  // ==========================================
   // CART - ADD PRODUCT
-  // ==========================================
 
   function addToCart(product: Product) {
-    const existingItem = cart.find(
-      (item) => item.product.id === product.id
-    );
+    const existingItem = cart.find((item) => item.product.id === product.id);
 
     let newCart: CartItem[];
 
@@ -256,13 +205,9 @@ export function ShopProvider({
     saveCartToCookie(newCart);
   }
 
-  // ==========================================
   // CART - INCREASE QUANTITY
-  // ==========================================
 
-  function increaseQuantity(
-    productId: number
-  ) {
+  function increaseQuantity(productId: number) {
     const newCart = cart.map((item) =>
       item.product.id === productId
         ? {
@@ -276,13 +221,9 @@ export function ShopProvider({
     saveCartToCookie(newCart);
   }
 
-  // ==========================================
   // CART - DECREASE QUANTITY
-  // ==========================================
 
-  function decreaseQuantity(
-    productId: number
-  ) {
+  function decreaseQuantity(productId: number) {
     const newCart = cart
       .map((item) =>
         item.product.id === productId
@@ -298,16 +239,10 @@ export function ShopProvider({
     saveCartToCookie(newCart);
   }
 
-  // ==========================================
   // CART - REMOVE COMPLETELY
-  // ==========================================
 
-  function removeFromCart(
-    productId: number
-  ) {
-    const newCart = cart.filter(
-      (item) => item.product.id !== productId
-    );
+  function removeFromCart(productId: number) {
+    const newCart = cart.filter((item) => item.product.id !== productId);
 
     setCart(newCart);
     saveCartToCookie(newCart);
@@ -322,8 +257,7 @@ export function ShopProvider({
                 );
 
             return [
-                product,
-                ...withoutCurrentProduct,
+                product, ...withoutCurrentProduct,
             ].slice(0, 4);
         });
     },
@@ -356,9 +290,7 @@ export function useShop() {
   const context = useContext(ShopContext);
 
   if (!context) {
-    throw new Error(
-      "useShop must be used inside ShopProvider"
-    );
+    throw new Error("useShop must be used inside ShopProvider");
   }
 
   return context;

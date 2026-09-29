@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 
 export default function ProfilePage() {
-    const { user, loading, authFetch } = useAuth();
+    const { user, loading, authFetch, updateUser } = useAuth();
 
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
@@ -98,6 +98,12 @@ export default function ProfilePage() {
             }
             
             setName(data.user.name);
+
+            updateUser({
+                id: String(data.user.id),
+                name: data.user.name,
+                email: data.user.email,
+            });
 
             setMessage("Profile updated successfully");
         } finally {

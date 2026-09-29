@@ -32,6 +32,8 @@ type AuthContextType = {
 
   refreshToken: () => Promise<boolean>;
 
+  updateUser: (user: User) => void;
+
   authFetch: (
     input: RequestInfo | URL,
     init?: RequestInit
@@ -50,16 +52,17 @@ export function AuthProvider({
   const [loading, setLoading] = useState(true);
 
   const [accessToken, setAccessToken] = useState<string | null>(null);
-
   const [accessTokenExpiresAt, setAccessTokenExpiresAt] = useState<number | null>(null);
 
   const [refreshTokenExpiresAt, setRefreshTokenExpiresAt] = useState<number | null>(null);
-
   const [lastRefreshAt, setLastRefreshAt] = useState<number | null>(null);
 
   const accessTokenRef = useRef<string | null>(null);
-
   const refreshPromiseRef = useRef<Promise<boolean> | null>(null);
+  
+  const updateUser = useCallback((updatedUser: User) => {
+    setUser(updatedUser);
+  }, []);
 
   const setNewAccessToken = useCallback(
     (
@@ -348,6 +351,7 @@ export function AuthProvider({
         login,
         logout,
         refreshToken,
+        updateUser,
         authFetch,
       }}
     >

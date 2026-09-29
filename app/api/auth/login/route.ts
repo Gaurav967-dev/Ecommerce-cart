@@ -2,11 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 
 import sql from "@/lib/db";
-import {
-  createAccessToken,
-  createRefreshToken,
-  REFRESH_TOKEN_TTL_SECONDS,
-} from "@/lib/jwt";
+import { createAccessToken, createRefreshToken, REFRESH_TOKEN_TTL_SECONDS } from "@/lib/jwt";
 
 export async function POST(request: Request) {
   try {
@@ -29,14 +25,8 @@ export async function POST(request: Request) {
     }
 
     const users = await sql`
-      SELECT
-        id,
-        name,
-        email,
-        password
-      FROM users
-      WHERE LOWER(email) = ${email}
-      LIMIT 1
+      SELECT id, name, email, password FROM users
+      WHERE LOWER(email) = ${email} LIMIT 1
     `;
 
     const user = users[0];
@@ -51,10 +41,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const passwordValid = await bcrypt.compare(
-      password,
-      user.password
-    );
+    const passwordValid = await bcrypt.compare(password, user.password);
 
     if (!passwordValid) {
       return NextResponse.json(
@@ -99,18 +86,13 @@ export async function POST(request: Request) {
 
       accessToken: access.token,
 
-      accessTokenExpiresAt:
-        access.expiresAt * 1000,
+      accessTokenExpiresAt: access.expiresAt * 1000,
 
       accessTokenExpiresIn: 10 * 60,
 
-      refreshTokenExpiresAt:
-        refresh.expiresAt * 1000,
+      refreshTokenExpiresAt: refresh.expiresAt * 1000,
     });
 
-    /*
-     * Only refresh token stays HttpOnly.
-     */
     response.cookies.set(
       "refresh_token",
       refresh.token,
