@@ -42,7 +42,7 @@ export default function ProfilePage() {
 
     if (loading) {
         return (
-            <main className="mx-auth max-w-3xl px-6 py-16">
+            <main className="mx-auto max-w-3xl px-6 py-16">
                 <p>Loading...</p>
             </main>
         );
@@ -112,7 +112,7 @@ export default function ProfilePage() {
     }
 
     return (
-        <main className="mx-auth max-w-3xl px-6 py-16">
+        <main className="mx-auto max-w-3xl px-6 py-16">
             <h1 className="mb-8 text-3xl font-semibold">
                 My Profile
             </h1>

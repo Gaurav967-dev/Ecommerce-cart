@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 
 import sql from "@/lib/db";
-import { createAccessToken, createRefreshToken, REFRESH_TOKEN_TTL_SECONDS } from "@/lib/jwt";
+import { createAccessToken, createRefreshToken, ACCESS_TOKEN_TTL_SECONDS, REFRESH_TOKEN_TTL_SECONDS } from "@/lib/jwt";
 
 export async function POST(request: Request) {
   try {
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
 
       accessTokenExpiresAt: access.expiresAt * 1000,
 
-      accessTokenExpiresIn: 10 * 60,
+      accessTokenExpiresIn: ACCESS_TOKEN_TTL_SECONDS,
 
       refreshTokenExpiresAt: refresh.expiresAt * 1000,
     });
