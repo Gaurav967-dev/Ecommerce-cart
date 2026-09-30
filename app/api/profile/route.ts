@@ -8,8 +8,8 @@ export async function GET(request: NextRequest) {
         const auth = await requireAuth(request);
 
         const users = await sql`
-            SELECT id, name, email, created_at
-            FROM users WHERE id = ${auth.userId} LIMIT 1
+            SELECT id, name, email, phone, created_at FROM users
+            WHERE id = ${auth.userId} LIMIT 1
         `;
 
         const user = users[0];
@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
                 id: String(user.id),
                 name: user.name,
                 email: user.email,
+                phone: user.phone ?? "",
                 createdAt: user.created_at,
             },
         });
@@ -62,6 +63,8 @@ export async function PATCH(request: NextRequest) {
 
         const name = String(body.name ?? "").trim();
 
+        const phone = String(body.phone ?? "").trim();
+
         if (!name) {
             return NextResponse.json(
                 {
@@ -80,9 +83,19 @@ export async function PATCH(request: NextRequest) {
             );
         }
 
+        if (phone && phone.length > 20) {
+            return NextResponse.json(
+                {
+                    error: "Invalid phone number",
+                },
+                { status: 400 }
+            );
+        }
+
         const users = await sql`
-            UPDATE users SET name = ${name} WHERE id = ${auth.userId}
-            RETURNING id, name, email, created_at
+            UPDATE users SET name = ${name}, phone = ${phone || null}
+            WHERE id = ${auth.userId}
+            RETURNING id, name, email, phone, created_at
         `;
 
         const user = users[0];
@@ -103,6 +116,7 @@ export async function PATCH(request: NextRequest) {
                 id: String(user.id),
                 name: user.name,
                 email: user.email,
+                phone: user.phone ?? "",
                 createdAt: user.created_at,
             },
         });

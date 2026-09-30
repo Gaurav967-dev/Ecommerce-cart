@@ -1,0 +1,5 @@
+fastapi
+uvicorn[standard]
+PyJWT
+psycopg[binary]
+python-dotenv

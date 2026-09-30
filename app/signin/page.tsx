@@ -25,23 +25,28 @@ export default function SignInPage() {
     setLoading(true);
     setError("");
 
-    const result = await login(
-      email,
-      password
-    );
+    const result = await login(email, password);
 
     setLoading(false);
 
     if (!result.success) {
-      setError(
-        result.error ??
-          "Unable to sign in"
-      );
+      setError(result.error ?? "Unable to sign in");
 
       return;
     }
 
-    router.replace("/account");
+    const params = new URLSearchParams(window.location.search);
+
+    const callbackUrl = params.get("callbackUrl");
+
+    const destination =
+      callbackUrl &&
+      callbackUrl.startsWith("/") &&
+      !callbackUrl.startsWith("//")
+        ? callbackUrl
+        : "/account";
+
+    router.replace(destination);
   }
 
   return (
@@ -70,9 +75,7 @@ export default function SignInPage() {
               <input
                 type="email"
                 value={email}
-                onChange={(event) =>
-                  setEmail(event.target.value)
-                }
+                onChange={(event) => setEmail(event.target.value)}
                 required
                 className="w-full rounded-xl border py-3 pl-10 pr-4 outline-none focus:border-black"
                 placeholder="you@example.com"
@@ -91,9 +94,7 @@ export default function SignInPage() {
               <input
                 type="password"
                 value={password}
-                onChange={(event) =>
-                  setPassword(event.target.value)
-                }
+                onChange={(event) => setPassword(event.target.value)}
                 required
                 className="w-full rounded-xl border py-3 pl-10 pr-4 outline-none focus:border-black"
                 placeholder="••••••••"
@@ -112,9 +113,7 @@ export default function SignInPage() {
             disabled={loading}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-black py-3 text-sm font-medium text-white disabled:opacity-50"
           >
-            {loading
-              ? "Signing In..."
-              : "Sign In"}
+            {loading ? "Signing In..." : "Sign In"}
 
             {!loading && (
               <ArrowRight className="h-4 w-4" />

@@ -8,8 +8,9 @@ export async function GET(request: NextRequest) {
         const auth = await requireAuth(request);
 
         const orders = await sql`
-            SELECT id, total_amount, status, created_at FROM ORDERS
-            WHERE user_id = ${auth.userId} ORDER BY created_at DESC
+            SELECT o.id, o.order_number, o.total_amount, o.subtotal, o.discount_amount, o.shipping_fee, o.tax_amount, o.status, o.payment_method, o.payment_status, o.created_at, COUNT(oi.id)::INTEGER AS item_count FROM ORDERS o
+            LEFT JOIN order_items oi ON oi.order_id = o.id
+            WHERE o.user_id = ${auth.userId} GROUP BY o.id ORDER BY o.created_at DESC
         `;
 
         return NextResponse.json({ orders });

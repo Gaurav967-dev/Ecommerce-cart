@@ -7,8 +7,16 @@ import { useAuth } from "@/components/AuthProvider";
 
 type Order = {
     id: string | number;
+    order_number: string | null;
     total_amount: number | string;
+    subtotal: number | string;
+    discount_amount: number | string;
+    shipping_fee: number | string;
+    tax_amount: number | string;
     status: string;
+    payment_method: string | null;
+    payment_status: string;
+    item_count: number;
     created_at: string;
 };
 
@@ -77,7 +85,7 @@ export default function OrdersPage() {
                 </p>
 
                 <Link
-                    href="/signin"
+                    href="/signin?callbackUrl=/orders"
                     className="mt-6 inline-block rounded-full bg-black px-6 py-3 text-white"
                 >
                     Sign In
@@ -138,6 +146,13 @@ export default function OrdersPage() {
                                 <p className="text-sm capitalize text-gray-500">
                                     {order.status}
                                 </p>
+
+                                <Link
+                                  href={`/orders/${order.id}`}
+                                  className="mt-3 inline-block text-sm font-medium underline underline-offset-4"
+                                >
+                                  View Details
+                                </Link>
                             </div>
                         </div>
                     ))}

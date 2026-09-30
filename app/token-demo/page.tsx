@@ -1,19 +1,10 @@
 "use client";
 
-import {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import {
-  decodeJwt,
-  decodeProtectedHeader,
-} from "jose";
+import { decodeJwt, decodeProtectedHeader } from "jose";
 
-import {
-  useAuth,
-} from "@/components/AuthProvider";
+import { useAuth } from "@/components/AuthProvider";
 
 function formatRemaining(
   expiresAt: number | null,
@@ -98,7 +89,7 @@ export default function TokenDemoPage() {
   async function callProtectedMe() {
     const response =
       await authFetch(
-        "/api/auth/me",
+        "http://localhost:8000/auth/me",
         {
           method: "GET",
           cache: "no-store",
@@ -142,9 +133,7 @@ export default function TokenDemoPage() {
 
           <p>
             <strong>Status:</strong>{" "}
-            {accessToken
-              ? "Present"
-              : "Missing"}
+            {accessToken ? "Present" : "Missing"}
           </p>
 
           <p>
