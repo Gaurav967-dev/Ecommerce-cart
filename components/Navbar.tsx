@@ -35,7 +35,7 @@ export default function Navbar() {
   );
 
   const activeCategory = searchParams.get("category") || "";
-  
+
   function closeMenu() {
     setIsMenuOpen(false);
   }
@@ -124,7 +124,7 @@ export default function Navbar() {
               className="hidden max-w-xl flex-1 lg:flex mx-6"
             >
               <div className="relative w-full">
-                <SearchIcon 
+                <SearchIcon
                   size={18}
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground"
                 />
@@ -171,7 +171,7 @@ export default function Navbar() {
                   >
                     Sign In
                   </Link>
-              
+
                   <Link
                     href="/signup"
                     className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition hover:scale-105 hover:bg-gray-800"
@@ -341,6 +341,14 @@ export default function Navbar() {
                     </div>
 
                     <MobileNavLink
+                      href="/account"
+                      icon={<LayoutGridIcon size={20} />}
+                      label="My Account"
+                      active={isActive("/account")}
+                      onClick={closeMenu}
+                    />
+
+                    <MobileNavLink
                       href="/profile"
                       icon={<UserIcon size={20} />}
                       label="Profile"
@@ -415,8 +423,7 @@ function HeaderAction({
     <Link
       href={href}
       className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm transition
-        ${
-          active ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+        ${active ? "bg-primary text-primary-foreground" : "hover:bg-muted"
         }
       `}
     >
@@ -427,8 +434,7 @@ function HeaderAction({
       {count !== undefined && count > 0 && (
         <span
           className={`flex min-w-5 h-5 items-center justify-center rounded-full px-1 text-xs
-            ${
-              active ? "bg-primary-foreground text-primary" : "bg-primary text-primary-foreground"
+            ${active ? "bg-primary-foreground text-primary" : "bg-primary text-primary-foreground"
             }
           `}
         >
@@ -460,8 +466,7 @@ function NavLink({
     <Link
       href={href}
       className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition
-        ${
-          active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+        ${active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
         }
       `}
     >
@@ -472,8 +477,7 @@ function NavLink({
       {count !== undefined && count > 0 && (
         <span
           className={`rounded-full px-2 py-0.5 text-xs
-            ${
-              active ? "bg-primary-foreground text-primary" : "bg-primary text-primary-foreground"
+            ${active ? "bg-primary-foreground text-primary" : "bg-primary text-primary-foreground"
             }
           `}
         >
@@ -508,8 +512,7 @@ function MobileNavLink({
       href={href}
       onClick={onClick}
       className={`flex items-center justify-between rounded-xl px-4 py-3 transition
-        ${
-          active ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+        ${active ? "bg-primary text-primary-foreground" : "hover:bg-muted"
         }
       `}
     >

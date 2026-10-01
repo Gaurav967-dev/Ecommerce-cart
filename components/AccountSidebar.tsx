@@ -8,6 +8,7 @@ import {
 import { useState } from "react";
 
 import {
+  LayoutGridIcon,
   UserIcon,
   BoxIcon,
   HeartIcon,
@@ -57,6 +58,11 @@ export default function AccountSidebar() {
 
   const navItems = [
     {
+      href: "/account",
+      label: "Overview",
+      icon: LayoutGridIcon,
+    },
+    {
       href: "/profile",
       label: "Profile",
       icon: UserIcon,
@@ -83,21 +89,24 @@ export default function AccountSidebar() {
       {/* USER */}
 
       <div className="border-b pb-5">
-        <div className="flex items-center gap-3">
+        <Link
+          href="/account"
+          className="group flex items-center gap-3 rounded-2xl p-2 transition hover:bg-gray-50"
+        >
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-black text-white">
             <UserIcon size={21} />
           </div>
-
+        
           <div className="min-w-0">
             <p className="truncate font-semibold">
               {user.name}
             </p>
-
+        
             <p className="truncate text-sm text-gray-500">
               {user.email}
             </p>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* NAVIGATION */}
