@@ -72,28 +72,65 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // If this becomes the default, unset the existing default first.
-        if (isDefault) {
-            await sql`
-                UPDATE addresses SET is_default = FALSE
-                WHERE user_id = ${auth.userId}
-            `;
-        }
+        const address =
+            await sql.begin(
+              async (transaction) => {
 
-        const addresses = await sql`
-            INSERT INTO addresses (
-                user_id, label, recipient_name, phone, address_line1, address_line2, city, state, postal_code, country, is_default
-            )
-            VALUES (
-                ${auth.userId}, ${label}, ${recipientName}, ${phone}, ${addressLine1}, ${addressLine2 || null}, ${city}, ${state}, ${postalCode}, ${country}, ${isDefault}
-            )
-            RETURNING *
-        `;
+                if (isDefault) {
+                  await transaction`
+                    UPDATE addresses
+                
+                    SET
+                      is_default = FALSE,
+                      updated_at = NOW()
+                
+                    WHERE
+                      user_id =
+                        ${auth.userId}
+                  `;
+                }
+            
+                const rows =
+                  await transaction`
+                    INSERT INTO addresses (
+                      user_id,
+                      label,
+                      recipient_name,
+                      phone,
+                      address_line1,
+                      address_line2,
+                      city,
+                      state,
+                      postal_code,
+                      country,
+                      is_default
+                    )
+            
+                    VALUES (
+                      ${auth.userId},
+                      ${label},
+                      ${recipientName},
+                      ${phone},
+                      ${addressLine1},
+                      ${addressLine2 || null},
+                      ${city},
+                      ${state},
+                      ${postalCode},
+                      ${country},
+                      ${isDefault}
+                    )
+            
+                    RETURNING *
+                  `;
+            
+                return rows[0];
+              }
+            );
 
         return NextResponse.json(
             {
                 success: true,
-                address: addresses[0],
+                address,
             },
             {
                 status: 201,

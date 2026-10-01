@@ -116,64 +116,167 @@ export async function PATCH(
       await sql.begin(
         async (transaction) => {
 
-          /*
-           * Only remove the previous
-           * default if this address is
-           * becoming the new default.
-           */
-          if (isDefault) {
+          // 1. Verify this address belongs
+          //    to the authenticated user FIRST
+
+          const existingRows =
             await transaction`
-              UPDATE addresses
-              SET
-                is_default = FALSE,
-                updated_at = NOW()
-              WHERE user_id =
-                ${auth.userId}
-            `;
-          }
-
-          const rows =
-            await transaction`
-              UPDATE addresses
-              SET
-                label =
-                  ${label},
-
-                recipient_name =
-                  ${recipientName},
-
-                phone =
-                  ${phone},
-
-                address_line1 =
-                  ${addressLine1},
-
-                address_line2 =
-                  ${addressLine2 || null},
-
-                city =
-                  ${city},
-
-                state =
-                  ${state},
-
-                postal_code =
-                  ${postalCode},
-
-                country =
-                  ${country},
-
-                is_default =
-                  ${isDefault},
-
-                updated_at =
-                  NOW()
-
+              SELECT
+                id,
+                is_default
+        
+              FROM addresses
+        
               WHERE
                 id = ${id}
                 AND user_id =
                   ${auth.userId}
+        
+              LIMIT 1
+        
+              FOR UPDATE
+            `;
 
+          const existing =
+            existingRows[0];
+
+          if (!existing) {
+            return null;
+          }
+
+
+          // 2. Work out final default state
+
+          let finalIsDefault =
+            isDefault;
+
+
+          /*
+           * If this is currently the default
+           * address and the user tries to
+           * remove default status, choose
+           * another address as default.
+           *
+           * If this is the user's only address,
+           * keep it as default.
+           */
+
+          if (
+            existing.is_default &&
+            !isDefault
+          ) {
+            const otherAddresses =
+              await transaction`
+                SELECT id
+          
+                FROM addresses
+          
+                WHERE
+                  user_id =
+                    ${auth.userId}
+          
+                  AND id <> ${id}
+          
+                ORDER BY
+                  created_at DESC
+          
+                LIMIT 1
+          
+                FOR UPDATE
+              `;
+
+            const replacement =
+              otherAddresses[0];
+
+            if (replacement) {
+              await transaction`
+                UPDATE addresses
+            
+                SET
+                  is_default = TRUE,
+                  updated_at = NOW()
+            
+                WHERE
+                  id =
+                    ${replacement.id}
+            
+                  AND user_id =
+                    ${auth.userId}
+              `;
+            } else {
+              // Only saved address:
+              // it must remain default.
+              finalIsDefault = true;
+            }
+          }
+
+
+          // 3. If this address is becoming
+          //    default, unset every OTHER one
+
+          if (finalIsDefault) {
+            await transaction`
+              UPDATE addresses
+          
+              SET
+                is_default = FALSE,
+                updated_at = NOW()
+          
+              WHERE
+                user_id =
+                  ${auth.userId}
+          
+                AND id <> ${id}
+            `;
+          }
+
+
+          // 4. Update the owned address
+
+          const rows =
+            await transaction`
+              UPDATE addresses
+        
+              SET
+                label =
+                  ${label},
+        
+                recipient_name =
+                  ${recipientName},
+        
+                phone =
+                  ${phone},
+        
+                address_line1 =
+                  ${addressLine1},
+        
+                address_line2 =
+                  ${addressLine2 || null},
+        
+                city =
+                  ${city},
+        
+                state =
+                  ${state},
+        
+                postal_code =
+                  ${postalCode},
+        
+                country =
+                  ${country},
+        
+                is_default =
+                  ${finalIsDefault},
+        
+                updated_at =
+                  NOW()
+        
+              WHERE
+                id = ${id}
+        
+                AND user_id =
+                  ${auth.userId}
+        
               RETURNING *
             `;
 
@@ -204,7 +307,7 @@ export async function PATCH(
     if (
       error instanceof Error &&
       error.message ===
-        "UNAUTHORIZED"
+      "UNAUTHORIZED"
     ) {
       return NextResponse.json(
         {
@@ -352,7 +455,7 @@ export async function DELETE(
     if (
       error instanceof Error &&
       error.message ===
-        "UNAUTHORIZED"
+      "UNAUTHORIZED"
     ) {
       return NextResponse.json(
         {
