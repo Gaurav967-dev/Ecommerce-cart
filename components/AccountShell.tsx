@@ -22,11 +22,9 @@ export default function AccountShell({
               : ""
           }
         >
-          {user && (
-            <AccountSidebar />
-          )}
+          {user && <AccountSidebar />}
 
-          <div className="min-w-0">
+          <div className="min-w-0 w-full">
             {children}
           </div>
         </div>
