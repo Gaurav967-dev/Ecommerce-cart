@@ -8,9 +8,49 @@ export async function GET(request: NextRequest) {
         const auth = await requireAuth(request);
 
         const orders = await sql`
-            SELECT o.id, o.order_number, o.total_amount, o.subtotal, o.discount_amount, o.shipping_fee, o.tax_amount, o.status, o.payment_method, o.payment_status, o.created_at, COUNT(oi.id)::INTEGER AS item_count FROM ORDERS o
-            LEFT JOIN order_items oi ON oi.order_id = o.id
-            WHERE o.user_id = ${auth.userId} GROUP BY o.id ORDER BY o.created_at DESC
+          SELECT
+            o.id,
+            o.order_number,
+            o.total_amount,
+            o.subtotal,
+            o.discount_amount,
+            o.shipping_fee,
+            o.tax_amount,
+            o.status,
+            o.payment_method,
+            o.payment_status,
+            o.created_at,
+            
+            COUNT(oi.id)::INTEGER
+              AS item_count,
+            
+            COALESCE(
+              json_agg(
+                json_build_object(
+                  'id', oi.id,
+                  'name', oi.product_name,
+                  'image', oi.product_image,
+                  'quantity', oi.quantity
+                )
+                ORDER BY oi.id
+              )
+              FILTER (
+                WHERE oi.id IS NOT NULL
+              ),
+              '[]'::json
+            ) AS preview_items
+            
+          FROM orders o
+            
+          LEFT JOIN order_items oi
+            ON oi.order_id = o.id
+            
+          WHERE o.user_id =
+            ${auth.userId}
+            
+          GROUP BY o.id
+            
+          ORDER BY o.created_at DESC
         `;
 
         return NextResponse.json({ orders });

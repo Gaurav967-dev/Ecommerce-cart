@@ -140,6 +140,30 @@ function prettyStatus(
     );
 }
 
+function statusClasses(
+  status: string
+) {
+  switch (
+    status.toLowerCase()
+  ) {
+    case "delivered":
+      return "bg-green-100 text-green-800";
+
+    case "cancelled":
+      return "bg-red-100 text-red-700";
+
+    case "shipped":
+    case "out_for_delivery":
+      return "bg-blue-100 text-blue-700";
+
+    case "confirmed":
+    case "processing":
+      return "bg-amber-100 text-amber-800";
+
+    default:
+      return "bg-gray-100 text-gray-700";
+  }
+}
 
 export default function OrderDetailsPage() {
   const params =
@@ -346,46 +370,103 @@ export default function OrderDetailsPage() {
       </Link>
 
 
-      {/* HEADER */}
+      {/* ORDER HERO */}
 
-      <div className="mt-6 flex flex-wrap items-start justify-between gap-5">
+      <section className="mt-6 overflow-hidden rounded-3xl border bg-white shadow-sm">
 
-        <div>
-          <p className="text-sm text-gray-500">
-            Order
-          </p>
+        {/* DARK HEADER */}
 
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-            #
-            {order.orderNumber ??
-              order.id}
-          </h1>
+        <div className="bg-black px-6 py-7 text-white sm:px-8">
 
-          <p className="mt-2 text-sm text-gray-500">
-            Placed on{" "}
-            {new Date(
-              order.createdAt
-            ).toLocaleDateString(
-              "en-IN",
-              {
-                day: "numeric",
+          <div className="flex flex-wrap items-start justify-between gap-5">
 
-                month: "long",
+            <div>
+              <p className="text-sm text-white/60">
+                Order Details
+              </p>
 
-                year: "numeric",
-              }
-            )}
-          </p>
+              <h1 className="mt-1 text-3xl font-semibold tracking-tight">
+                #
+                {order.orderNumber ??
+                  order.id}
+              </h1>
+                
+              <p className="mt-2 text-sm text-white/60">
+                Thank you for your purchase
+              </p>
+            </div>
+                
+            <span
+              className={`rounded-full px-4 py-2 text-sm font-semibold ${statusClasses(
+                order.status
+              )}`}
+            >
+              {prettyStatus(
+                order.status
+              )}
+            </span>
+            
+          </div>
         </div>
-
-
-        <span className="rounded-full border bg-white px-4 py-2 text-sm font-medium capitalize shadow-sm">
-          {prettyStatus(
-            order.status
-          )}
-        </span>
-
-      </div>
+            
+            
+        {/* ORDER SUMMARY */}
+            
+        <div className="grid gap-px bg-gray-200 sm:grid-cols-3">
+            
+          <div className="bg-white px-6 py-5">
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+              Placed On
+            </p>
+            
+            <p className="mt-2 font-semibold">
+              {new Date(
+                order.createdAt
+              ).toLocaleDateString(
+                "en-IN",
+                {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                }
+              )}
+            </p>
+          </div>
+            
+            
+          <div className="bg-white px-6 py-5">
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+              Payment
+            </p>
+            
+            <p className="mt-2 font-semibold">
+              {order.paymentMethod ??
+                "Not available"}
+            </p>
+              
+            <p className="mt-1 text-sm capitalize text-gray-500">
+              {prettyStatus(
+                order.paymentStatus ??
+                  "pending"
+              )}
+            </p>
+          </div>
+            
+            
+          <div className="bg-white px-6 py-5">
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+              Order Total
+            </p>
+            
+            <p className="mt-2 text-2xl font-semibold">
+              {money(
+                order.totalAmount
+              )}
+            </p>
+          </div>
+            
+        </div>
+      </section>
 
 
       {/* ORDER PROGRESS */}
@@ -415,51 +496,98 @@ export default function OrderDetailsPage() {
             </div>
 
 
-            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <div className="overflow-x-auto pb-2">
 
-              {orderSteps.map(
-                (
-                  step,
-                  index
-                ) => {
+              <div className="relative min-w-[680px]">
 
-                  const complete =
-                    index <=
-                    currentStep;
+                {/* BACKGROUND LINE */}
 
-                  return (
-                    <div
-                      key={step}
-                      className={`rounded-xl border p-3 ${complete
-                        ? "border-black bg-black text-white"
-                        : "bg-gray-50 text-gray-400"
-                        }`}
-                    >
+                <div className="absolute left-8 right-8 top-5 h-0.5 bg-gray-200">
 
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full border border-current">
+                  {/* COMPLETED LINE */}
 
-                        {complete ? (
-                          <CheckIcon className="h-4 w-4" />
-                        ) : (
-                          <span className="text-xs">
-                            {index +
-                              1}
-                          </span>
-                        )}
+                  <div
+                    className="h-full bg-black transition-all duration-500"
+                    style={{
+                      width:
+                        `${
+                          (
+                            currentStep /
+                            (
+                              orderSteps.length -
+                              1
+                            )
+                          ) * 100
+                        }%`,
+                    }}
+                  />
 
-                      </div>
+                </div>
+                  
+                  
+                <div className="relative grid grid-cols-6">
+                  
+                  {orderSteps.map(
+                    (
+                      step,
+                      index
+                    ) => {
+                    
+                      const complete =
+                        index <=
+                        currentStep;
+                    
+                      const current =
+                        index ===
+                        currentStep;
+                    
+                      return (
+                        <div
+                          key={step}
+                          className="flex flex-col items-center px-2 text-center"
+                        >
+                        
+                          <div
+                            className={`z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 transition ${
+                              complete
+                                ? "border-black bg-black text-white"
+                                : "border-gray-200 bg-white text-gray-400"
+                            } ${
+                              current
+                                ? "ring-4 ring-gray-100"
+                                : ""
+                            }`}
+                          >
+                            {complete ? (
+                              <CheckIcon
+                                size={17}
+                              />
+                            ) : (
+                              <span className="text-xs font-semibold">
+                                {index + 1}
+                              </span>
+                            )}
+                          </div>
+                          
+                          <p
+                            className={`mt-3 text-xs font-medium ${
+                              complete
+                                ? "text-black"
+                                : "text-gray-400"
+                            }`}
+                          >
+                            {prettyStatus(
+                              step
+                            )}
+                          </p>
+                          
+                        </div>
+                      );
+                    }
+                  )}
 
-                      <p className="mt-3 text-xs font-medium">
-                        {prettyStatus(
-                          step
-                        )}
-                      </p>
-
-                    </div>
-                  );
-                }
-              )}
-
+                </div>
+              </div>
             </div>
 
           </section>
@@ -678,7 +806,7 @@ export default function OrderDetailsPage() {
 
         {/* RIGHT */}
 
-        <div className="space-y-8">
+        <div className="space-y-6 self-start lg:sticky lg:top-32">
 
           {/* PAYMENT */}
 

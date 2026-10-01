@@ -29,6 +29,12 @@ type Order = {
   payment_status: string;
   item_count: number;
   created_at: string;
+  preview_items: {
+    id: string | number;
+    name: string;
+    image: string | null;
+    quantity: number;
+  }[];
 };
 
 type OrderFilter =
@@ -70,24 +76,24 @@ function statusClasses(
   status: string
 ) {
   switch (
-  status.toLowerCase()
+    status.toLowerCase()
   ) {
     case "delivered":
-      return "bg-green-50 text-green-700 border-green-200";
+      return "bg-green-100 text-green-800";
 
     case "cancelled":
-      return "bg-red-50 text-red-600 border-red-200";
+      return "bg-red-100 text-red-700";
 
     case "shipped":
     case "out_for_delivery":
-      return "bg-blue-50 text-blue-700 border-blue-200";
+      return "bg-blue-100 text-blue-700";
 
-    case "processing":
     case "confirmed":
-      return "bg-amber-50 text-amber-700 border-amber-200";
+    case "processing":
+      return "bg-amber-100 text-amber-800";
 
     default:
-      return "bg-gray-100 text-gray-700 border-gray-200";
+      return "bg-gray-100 text-gray-700";
   }
 }
 
@@ -391,9 +397,9 @@ export default function OrdersPage() {
                     )
                   }
                   className={`rounded-full px-4 py-2 text-sm font-medium transition ${activeFilter ===
-                      value
-                      ? "bg-black text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    value
+                    ? "bg-black text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                 >
                   {label}
@@ -530,33 +536,64 @@ export default function OrdersPage() {
                     {/* ITEM SUMMARY */}
 
                     <div>
-
                       <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
                         Order Summary
                       </p>
 
-                      <div className="mt-3 flex items-center gap-3">
+                      <div className="mt-3 flex items-center gap-4">
 
-                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100">
+                        {/* PRODUCT PREVIEWS */}
 
-                          <BoxIcon
-                            size={21}
-                          />
+                        <div className="flex -space-x-3">
+                          {order.preview_items
+                            ?.slice(0, 3)
+                            .map((item) => (
+                              <div
+                                key={item.id}
+                                title={item.name}
+                                className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-white bg-gray-100 shadow-sm"
+                              >
+                                {item.image ? (
+                                  <div
+                                    role="img"
+                                    aria-label={
+                                      item.name
+                                    }
+                                    className="h-full w-full bg-cover bg-center"
+                                    style={{
+                                      backgroundImage:
+                                        `url("${item.image}")`,
+                                    }}
+                                  />
+                                ) : (
+                                  <BoxIcon
+                                    size={18}
+                                    className="text-gray-400"
+                                  />
+                                )}
+                              </div>
+                            ))}
 
+                          {order.preview_items &&
+                            order.preview_items.length >
+                            3 && (
+                              <div className="relative flex h-12 w-12 items-center justify-center rounded-xl border-2 border-white bg-black text-xs font-semibold text-white shadow-sm">
+                                +
+                                {order.preview_items
+                                  .length - 3}
+                              </div>
+                            )}
                         </div>
 
                         <div>
                           <p className="font-semibold">
-                            {
-                              order.item_count
-                            }{" "}
-                            {order.item_count ===
-                              1
+                            {order.item_count}{" "}
+                            {order.item_count === 1
                               ? "item"
                               : "items"}
                           </p>
 
-                          <p className="text-sm text-gray-500">
+                          <p className="mt-0.5 text-sm text-gray-500">
                             In this order
                           </p>
                         </div>

@@ -43,18 +43,34 @@ export default function AddressesPage() {
 
   return (
     <AccountShell>
-      <div className="mb-8">
-        <h1 className="text-3xl font-semibold tracking-tight">
-          Saved Addresses
-        </h1>
 
-        <p className="mt-2 text-sm text-gray-500">
-          Manage your delivery addresses for
-          faster checkout.
-        </p>
-      </div>
+      {/* ADDRESS HERO */}
+
+      <section className="mb-6 overflow-hidden rounded-3xl bg-black px-6 py-8 text-white shadow-sm sm:px-8">
+
+        <div className="flex flex-wrap items-end justify-between gap-5">
+
+          <div>
+            <p className="text-sm font-medium text-white/60">
+              Account settings
+            </p>
+
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight">
+              Delivery Addresses
+            </h1>
+
+            <p className="mt-2 max-w-xl text-sm leading-6 text-white/60">
+              Save your frequently used
+              delivery locations for a
+              faster checkout experience.
+            </p>
+          </div>
+
+        </div>
+      </section>
 
       <AddressBook />
+
     </AccountShell>
   );
 }
