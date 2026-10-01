@@ -86,9 +86,9 @@ export default function TokenDemoPage() {
     }
   }, [accessToken]);
 
-  async function callProtectedMe() {
-    const response =
-      await authFetch(
+  async function callPythonAuthMe() {
+    try {
+      const response = await authFetch(
         "http://localhost:8000/auth/me",
         {
           method: "GET",
@@ -96,10 +96,25 @@ export default function TokenDemoPage() {
         }
       );
 
-    const data =
-      await response.json();
+      const data = await response.json();
 
-    setMeResponse(data);
+      setMeResponse(data);
+
+      console.log(
+        "Python /auth/me:",
+        data
+      );
+    } catch (error) {
+      console.error(
+        "Python auth/me failed:",
+        error
+      );
+
+      setMeResponse({
+        error:
+          "Unable to call Python /auth/me",
+      });
+    }
   }
 
   if (loading) {
@@ -253,18 +268,41 @@ export default function TokenDemoPage() {
       </div>
 
       <section className="mt-8 rounded-2xl border p-6">
-        <h2 className="mb-4 text-xl font-semibold">
-          Bearer Extractor Demo
+        <h2 className="mb-2 text-xl font-semibold">
+          Python Bearer Authorization Demo
         </h2>
-
+                
+        <p className="mb-4 text-sm text-gray-500">
+          Sends the current access token to the
+          Python FastAPI /auth/me endpoint using
+          the Authorization Bearer header.
+        </p>
+                
         <button
+          type="button"
           onClick={() =>
-            void callProtectedMe()
+            void callPythonAuthMe()
           }
           className="rounded-full bg-black px-6 py-3 text-white"
         >
-          Call /api/auth/me
+          Call Python /auth/me
         </button>
+        
+        {meResponse !== null && (
+          <div className="mt-6">
+            <h3 className="mb-3 font-semibold">
+              Python API Response
+            </h3>
+        
+            <pre className="max-h-[500px] overflow-auto rounded-xl bg-gray-950 p-5 text-sm text-green-400">
+              {JSON.stringify(
+                meResponse,
+                null,
+                2
+              )}
+            </pre>
+          </div>
+        )}
       </section>
     </main>
   );
