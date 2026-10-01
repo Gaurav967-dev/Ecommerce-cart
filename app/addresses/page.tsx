@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 import AccountShell from "@/components/AccountShell";
-// import AddressBook from "@/components/AddressBook";
+import AddressBook from "@/components/AddressBook";
 import { useAuth } from "@/components/AuthProvider";
 
 export default function AddressesPage() {
@@ -54,7 +54,7 @@ export default function AddressesPage() {
         </p>
       </div>
 
-      {/* <AddressBook /> */}
+      <AddressBook />
     </AccountShell>
   );
 }
