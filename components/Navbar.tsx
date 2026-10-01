@@ -6,9 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/components/AuthProvider";
 
-import { HomeIcon, LayoutGridIcon, CartIcon, MenuIcon, XIcon, HeartIcon } from "lucide-animated";
-
-import { Search, User, Package, LogOut } from "lucide-react";
+import { HomeIcon, LayoutGridIcon, CartIcon, MenuIcon, XIcon, HeartIcon, SearchIcon, UserIcon, BoxIcon, LogoutIcon } from "lucide-animated";
 
 import { useShop } from "@/context/ShopContext";
 import UserMenu from "@/components/UserMenu";
@@ -126,7 +124,7 @@ export default function Navbar() {
               className="hidden max-w-xl flex-1 lg:flex mx-6"
             >
               <div className="relative w-full">
-                <Search
+                <SearchIcon 
                   size={18}
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground"
                 />
@@ -263,7 +261,7 @@ export default function Navbar() {
                 className="mb-4"
               >
                 <div className="relative">
-                  <Search
+                  <SearchIcon
                     size={18}
                     className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground"
                   />
@@ -344,7 +342,7 @@ export default function Navbar() {
 
                     <MobileNavLink
                       href="/profile"
-                      icon={<User className="h-5 w-5" />}
+                      icon={<UserIcon size={20} />}
                       label="Profile"
                       active={isActive("/profile")}
                       onClick={closeMenu}
@@ -352,7 +350,7 @@ export default function Navbar() {
 
                     <MobileNavLink
                       href="/orders"
-                      icon={<Package className="h-5 w-5" />}
+                      icon={<BoxIcon size={20} />}
                       label="Orders"
                       active={isActive("/orders")}
                       onClick={closeMenu}
@@ -364,7 +362,7 @@ export default function Navbar() {
                       disabled={signingOut}
                       className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left font-medium transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      <LogOut className="h-5 w-5" />
+                      <LogoutIcon size={20} />
 
                       <span>{signingOut ? "Signing out..." : "Sign Out"}</span>
                     </button>

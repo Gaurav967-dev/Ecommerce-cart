@@ -4,7 +4,14 @@ import { useEffect, useState } from "react";
 
 import Link from "next/link";
 
-import { ArrowLeft, Check, CreditCard, MapPin, Package, Truck } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  CheckIcon,
+  CreditCardIcon,
+  MapPinIcon,
+  BoxIcon,
+  TruckIcon,
+} from "lucide-animated";
 
 import { useParams } from "next/navigation";
 
@@ -295,7 +302,7 @@ export default function OrderDetailsPage() {
     return (
       <main className="mx-auto max-w-4xl px-6 py-20 text-center">
 
-        <Package className="mx-auto h-10 w-10 text-gray-400" />
+        <BoxIcon className="mx-auto h-10 w-10 text-gray-400" />
 
         <h1 className="mt-4 text-2xl font-semibold">
           Order unavailable
@@ -328,7 +335,7 @@ export default function OrderDetailsPage() {
     <main className="min-h-screen bg-gray-50 px-4 py-10 sm:px-6">
       <div className="mx-auto max-w-7xl">
 
-        <div className="grid gap-8 lg:grid-cols-[260px-1fr]">
+        <div className="grid gap-8 lg:grid-cols-[260px_1fr]">
 
             <AccountSidebar />
 
@@ -340,7 +347,7 @@ export default function OrderDetailsPage() {
                   href="/orders"
                   className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 transition hover:text-black"
                 >
-                  <ArrowLeft className="h-4 w-4" />
+                  <ArrowLeftIcon className="h-4 w-4" />
 
                   Back to Orders
                 </Link>
@@ -398,7 +405,7 @@ export default function OrderDetailsPage() {
                       <div className="mb-6 flex items-center gap-3">
                     
                         <div className="rounded-xl bg-gray-100 p-2.5">
-                          <Truck className="h-5 w-5" />
+                          <TruckIcon className="h-5 w-5" />
                         </div>
                     
                         <div>
@@ -440,7 +447,7 @@ export default function OrderDetailsPage() {
                                 <div className="flex h-7 w-7 items-center justify-center rounded-full border border-current">
                             
                                   {complete ? (
-                                    <Check className="h-4 w-4" />
+                                    <CheckIcon className="h-4 w-4" />
                                   ) : (
                                     <span className="text-xs">
                                       {index +
@@ -517,7 +524,7 @@ export default function OrderDetailsPage() {
                                 />
                               ) : (
                                 <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-gray-100">
-                                  <Package className="h-8 w-8 text-gray-400" />
+                                  <BoxIcon className="h-8 w-8 text-gray-400" />
                                 </div>
                               )}
 
@@ -576,7 +583,7 @@ export default function OrderDetailsPage() {
                       <div className="flex items-center gap-3">
                     
                         <div className="rounded-xl bg-gray-100 p-2.5">
-                          <MapPin className="h-5 w-5" />
+                          <MapPinIcon className="h-5 w-5" />
                         </div>
                     
                         <div>
@@ -691,7 +698,7 @@ export default function OrderDetailsPage() {
                       <div className="flex items-center gap-3">
                       
                         <div className="rounded-xl bg-gray-100 p-2.5">
-                          <CreditCard className="h-5 w-5" />
+                          <CreditCardIcon className="h-5 w-5" />
                         </div>
                       
                         <h2 className="font-semibold">

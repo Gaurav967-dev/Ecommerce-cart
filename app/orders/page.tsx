@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
-import { Package, ChevronRight } from "lucide-react";
+import { BoxIcon, ChevronRightIcon } from "lucide-animated";
 
 import AccountSidebar from "@/components/AccountSidebar";
 
@@ -133,7 +133,7 @@ export default function OrdersPage() {
                 </div>
               ) : orders.length === 0 ? (
                 <div className="rounded-3xl border bg-white p-10 text-center shadow-sm">
-                  <Package className="mx-auto h-10 w-10 text-gray-400" />
+                  <BoxIcon className="mx-auto h-10 w-10 text-gray-400" />
 
                   <h2 className="mt-4 text-lg font-semibold">
                     No orders yet
@@ -285,7 +285,7 @@ export default function OrdersPage() {
                           className="inline-flex items-center gap-2 rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800"
                         >
                           View Details
-                          <ChevronRight className="h-4 w-4" />
+                          <ChevronRightIcon className="h-4 w-4" />
                         </Link>
                       </div>
                     </article>

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import Link from "next/link";
 
-import { CalendarDays, Check, Home, Mail, MapPin, Phone, Plus, User, X } from "lucide-react";
+import { CalendarDaysIcon, CheckIcon, HomeIcon, AtSignIcon, MapPinIcon, PhoneCallIcon, PlusIcon, UserIcon, XIcon } from "lucide-animated";
 
 import { useAuth } from "@/components/AuthProvider";
 
@@ -391,7 +391,7 @@ export default function ProfilePage() {
 
                   <div className="mb-8 flex items-center gap-3">
                     <div className="rounded-2xl bg-gray-100 p-3">
-                      <User className="h-6 w-6" />
+                      <UserIcon className="h-6 w-6" />
                     </div>
 
                     <div>
@@ -425,7 +425,7 @@ export default function ProfilePage() {
                           </label>
                 
                           <div className="relative">
-                            <User className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                            <UserIcon className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                 
                             <input
                               value={name}
@@ -446,7 +446,7 @@ export default function ProfilePage() {
                           </label>
                 
                           <div className="relative">
-                            <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                            <AtSignIcon className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                 
                             <input
                               value={email}
@@ -469,7 +469,7 @@ export default function ProfilePage() {
                           </label>
                 
                           <div className="relative">
-                            <Phone className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                            <PhoneCallIcon className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                 
                             <input
                               type="tel"
@@ -495,7 +495,7 @@ export default function ProfilePage() {
                           </label>
                           
                           <div className="flex min-h-[50px] items-center gap-3 rounded-xl border bg-gray-50 px-4">
-                            <CalendarDays className="h-5 w-5 text-gray-400" />
+                            <CalendarDaysIcon className="h-5 w-5 text-gray-400" />
                           
                             <span className="text-sm font-medium">
                               {createdAt
@@ -528,7 +528,7 @@ export default function ProfilePage() {
                   
                       {profileMessage && (
                         <p className="flex items-center gap-2 rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700">
-                          <Check className="h-4 w-4" />
+                          <CheckIcon className="h-4 w-4" />
                     
                           {profileMessage}
                         </p>
@@ -562,7 +562,7 @@ export default function ProfilePage() {
                     <div className="flex items-center gap-3">
               
                       <div className="rounded-2xl bg-gray-100 p-3">
-                        <MapPin className="h-6 w-6" />
+                        <MapPinIcon className="h-6 w-6" />
                       </div>
               
                       <div>
@@ -591,12 +591,12 @@ export default function ProfilePage() {
                     >
                       {showAddressForm ? (
                         <>
-                          <X className="h-4 w-4" />
+                          <XIcon className="h-4 w-4" />
                           Cancel
                         </>
                       ) : (
                         <>
-                          <Plus className="h-4 w-4" />
+                          <PlusIcon className="h-4 w-4" />
                           Add Address
                         </>
                       )}
@@ -875,7 +875,7 @@ export default function ProfilePage() {
                     ) : addresses.length === 0 ? (
                       <div className="rounded-2xl border border-dashed p-8 text-center">
                     
-                        <MapPin className="mx-auto h-8 w-8 text-gray-400" />
+                        <MapPinIcon className="mx-auto h-8 w-8 text-gray-400" />
                     
                         <h3 className="mt-3 font-semibold">
                           No saved addresses
@@ -901,7 +901,7 @@ export default function ProfilePage() {
                         
                                 <div className="flex items-center gap-2">
                         
-                                  <Home className="h-5 w-5" />
+                                  <HomeIcon className="h-5 w-5" />
                         
                                   <h3 className="font-semibold">
                                     {address.label}

@@ -1,15 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
 import {
-  Heart,
-  LogOut,
-  MapPin,
-  Package,
-  User,
-} from "lucide-react";
+  usePathname,
+  useRouter,
+} from "next/navigation";
 import { useState } from "react";
+
+import {
+  UserIcon,
+  BoxIcon,
+  HeartIcon,
+  MapPinIcon,
+  LogoutIcon,
+} from "lucide-animated";
 
 import { useAuth } from "@/components/AuthProvider";
 
@@ -55,17 +59,22 @@ export default function AccountSidebar() {
     {
       href: "/profile",
       label: "Profile",
-      icon: User,
+      icon: UserIcon,
     },
     {
       href: "/orders",
       label: "Orders",
-      icon: Package,
+      icon: BoxIcon,
     },
     {
       href: "/wishlist",
       label: "Wishlist",
-      icon: Heart,
+      icon: HeartIcon,
+    },
+    {
+      href: "/addresses",
+      label: "Addresses",
+      icon: MapPinIcon,
     },
   ];
 
@@ -76,7 +85,7 @@ export default function AccountSidebar() {
       <div className="border-b pb-5">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-black text-white">
-            <User className="h-5 w-5" />
+            <UserIcon size={21} />
           </div>
 
           <div className="min-w-0">
@@ -96,32 +105,29 @@ export default function AccountSidebar() {
       <nav className="mt-5 space-y-1">
         {navItems.map((item) => {
           const Icon = item.icon;
+          const isActive = active(item.href);
 
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
-                active(item.href)
+              className={`group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
+                isActive
                   ? "bg-black text-white"
                   : "text-gray-600 hover:bg-gray-100 hover:text-black"
               }`}
             >
-              <Icon className="h-5 w-5" />
+              <Icon
+                size={20}
+                className="shrink-0"
+              />
 
-              {item.label}
+              <span>
+                {item.label}
+              </span>
             </Link>
           );
         })}
-
-        <Link
-          href="/profile#addresses"
-          className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-black"
-        >
-          <MapPin className="h-5 w-5" />
-
-          Addresses
-        </Link>
       </nav>
 
       {/* SIGN OUT */}
@@ -133,11 +139,13 @@ export default function AccountSidebar() {
           disabled={signingOut}
           className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-gray-600 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
         >
-          <LogOut className="h-5 w-5" />
+          <LogoutIcon size={20} />
 
-          {signingOut
-            ? "Signing out..."
-            : "Sign Out"}
+          <span>
+            {signingOut
+              ? "Signing out..."
+              : "Sign Out"}
+          </span>
         </button>
       </div>
     </aside>
