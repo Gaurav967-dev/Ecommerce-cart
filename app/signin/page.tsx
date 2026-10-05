@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mail, Lock, ArrowRight } from "lucide-react";
+import { AtSignIcon, LockIcon, ArrowRightIcon } from "lucide-animated";
 
 import { useAuth } from "@/components/AuthProvider";
 
@@ -70,7 +70,9 @@ export default function SignInPage() {
             </label>
 
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <div className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400">
+                <AtSignIcon size={20} />
+              </div>
 
               <input
                 type="email"
@@ -89,7 +91,9 @@ export default function SignInPage() {
             </label>
 
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <div className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400">
+                <LockIcon size={20} />
+              </div>
 
               <input
                 type="password"
@@ -116,7 +120,7 @@ export default function SignInPage() {
             {loading ? "Signing In..." : "Sign In"}
 
             {!loading && (
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRightIcon size={20} />
             )}
           </button>
         </form>
