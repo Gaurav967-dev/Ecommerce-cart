@@ -329,8 +329,6 @@ export function AuthProvider({
           };
         }
 
-        setUser(data.user);
-
         setNewAccessToken(
           data.accessToken,
           data.accessTokenExpiresAt
@@ -341,8 +339,8 @@ export function AuthProvider({
             null
         );
         
-        // Ask Python backend who
-        // this authenticated JWT belongs to.
+        // Get the authenticated user
+        // through the backend -> Python flow.
         const backendUser =
           await fetchCurrentUserFromBackend(
             data.accessToken
