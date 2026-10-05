@@ -40,6 +40,10 @@ type AuthContextType = {
   ) => Promise<Response>;
 };
 
+const AUTH_API_URL =
+  process.env.NEXT_PUBLIC_AUTH_API_URL ??
+  "http://localhost:8000";
+
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({
@@ -59,7 +63,7 @@ export function AuthProvider({
 
   const accessTokenRef = useRef<string | null>(null);
   const refreshPromiseRef = useRef<Promise<boolean> | null>(null);
-  
+
   const updateUser = useCallback((updatedUser: User) => {
     setUser(updatedUser);
   }, []);
@@ -92,15 +96,9 @@ export function AuthProvider({
         token: string
       ): Promise<User | null> => {
         try {
-          /*
-           * Browser calls Next.js backend.
-           *
-           * Next.js backend then calls
-           * Python FastAPI on :8000.
-           */
           const response =
             await fetch(
-              "/api/python-auth/me",
+              `${AUTH_API_URL}/auth/me`,
               {
                 method: "GET",
 
@@ -109,16 +107,15 @@ export function AuthProvider({
                     `Bearer ${token}`,
                 },
 
-                cache: "no-store",
+                credentials:
+                  "include",
+
+                cache:
+                  "no-store",
               }
             );
 
           if (!response.ok) {
-            console.error(
-              "Backend auth/me failed:",
-              response.status
-            );
-
             return null;
           }
 
@@ -130,9 +127,10 @@ export function AuthProvider({
           }
 
           return {
-            id: String(
-              data.user.id
-            ),
+            id:
+              String(
+                data.user.id
+              ),
 
             name:
               data.user.name,
@@ -142,7 +140,7 @@ export function AuthProvider({
           };
         } catch (error) {
           console.error(
-            "Unable to load authenticated user:",
+            "Python /auth/me failed:",
             error
           );
 
@@ -162,7 +160,7 @@ export function AuthProvider({
         (async () => {
           try {
             const response = await fetch(
-              "/api/auth/refresh",
+              `${AUTH_API_URL}/auth/refresh`,
               {
                 method: "POST",
                 credentials: "include",
@@ -190,7 +188,7 @@ export function AuthProvider({
 
             setRefreshTokenExpiresAt(
               data.refreshTokenExpiresAt ??
-                null
+              null
             );
 
             // Load authenticated user
@@ -199,10 +197,10 @@ export function AuthProvider({
               await fetchCurrentUserFromBackend(
                 data.accessToken
               );
-            
+
             if (!backendUser) {
               clearAuth();
-            
+
               return false;
             }
 
@@ -299,7 +297,7 @@ export function AuthProvider({
     ): Promise<LoginResult> => {
       try {
         const response = await fetch(
-          "/api/auth/login",
+          `${AUTH_API_URL}/auth/login`,
           {
             method: "POST",
 
@@ -333,33 +331,33 @@ export function AuthProvider({
           data.accessToken,
           data.accessTokenExpiresAt
         );
-        
+
         setRefreshTokenExpiresAt(
           data.refreshTokenExpiresAt ??
-            null
+          null
         );
-        
+
         // Get the authenticated user
         // through the backend -> Python flow.
         const backendUser =
           await fetchCurrentUserFromBackend(
             data.accessToken
           );
-        
+
         if (!backendUser) {
           clearAuth();
-        
+
           return {
             success: false,
             error:
               "Unable to verify authenticated user",
           };
         }
-        
+
         setUser(
           backendUser
         );
-        
+
         return {
           success: true,
         };
@@ -381,7 +379,7 @@ export function AuthProvider({
     useCallback(async () => {
       try {
         await fetch(
-          "/api/auth/logout",
+          `${AUTH_API_URL}/auth/logout`,
           {
             method: "POST",
             credentials: "include",
