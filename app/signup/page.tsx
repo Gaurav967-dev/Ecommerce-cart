@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+
 import {
   FormEvent,
   useRef,
@@ -8,15 +9,19 @@ import {
 } from "react";
 
 import {
-  User,
-  Mail,
-  Lock,
-  ArrowRight,
-} from "lucide-react";
+  useRouter,
+} from "next/navigation";
 
 import {
-  registerUser,
-} from "@/app/actions/auth";
+  UserIcon,
+  AtSignIcon,
+  LockIcon,
+  ArrowRightIcon,
+} from "lucide-animated";
+
+const AUTH_API_URL =
+  process.env.NEXT_PUBLIC_AUTH_API_URL ??
+  "http://localhost:8000";
 
 export default function SignUpPage() {
   const [name, setName] =
@@ -37,6 +42,9 @@ export default function SignUpPage() {
   const emailRef =
     useRef<HTMLInputElement>(null);
 
+  const router =
+    useRouter();
+
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>
   ) {
@@ -45,44 +53,72 @@ export default function SignUpPage() {
     setErrorMessage("");
     setIsPending(true);
 
-    const formData =
-      new FormData();
+    try {
+      const response =
+        await fetch(
+          `${AUTH_API_URL}/auth/signup`,
+          {
+            method: "POST",
 
-    formData.set(
-      "name",
-      name
-    );
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
 
-    formData.set(
-      "email",
-      email
-    );
+            credentials:
+              "include",
 
-    formData.set(
-      "password",
-      password
-    );
+            body: JSON.stringify({
+              name,
+              email,
+              password,
+            }),
+          }
+        );
 
-    const result =
-      await registerUser(
-        formData
-      );
+      const data =
+        await response.json();
 
-    setIsPending(false);
+      if (!response.ok) {
+        const message =
+          data.detail ??
+          data.error ??
+          "Failed to create account.";
 
-    if (!result.success) {
-      setErrorMessage(
-        result.error ??
-          "Failed to create account."
-      );
+        setErrorMessage(
+          message
+        );
 
-      if (result.field === "email") {
-        setEmail("");
+        if (
+          response.status === 409
+        ) {
+          setEmail("");
 
-        requestAnimationFrame(() => {
-          emailRef.current?.focus();
-        });
+          requestAnimationFrame(
+            () => {
+              emailRef.current
+                ?.focus();
+            }
+          );
+        }
+
+        return;
       }
+
+      router.push(
+        "/signin?registered=true"
+      );
+    } catch (error) {
+      console.error(
+        "Signup failed:",
+        error
+      );
+
+      setErrorMessage(
+        "Unable to reach authentication server."
+      );
+    } finally {
+      setIsPending(false);
     }
   }
 
@@ -114,7 +150,7 @@ export default function SignUpPage() {
               </label>
 
               <div className="relative">
-                <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                <UserIcon size={20} />
 
                 <input
                   id="name"
@@ -142,7 +178,7 @@ export default function SignUpPage() {
               </label>
 
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                <AtSignIcon size={20} />
 
                 <input
                   ref={emailRef}
@@ -171,7 +207,7 @@ export default function SignUpPage() {
               </label>
 
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                <LockIcon size={20} />
 
                 <input
                   id="password"
@@ -207,7 +243,7 @@ export default function SignUpPage() {
                 : "Create Account"}
 
               {!isPending && (
-                <ArrowRight className="h-5 w-5" />
+                <ArrowRightIcon size={20}/>
               )}
             </button>
           </form>

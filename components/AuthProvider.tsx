@@ -321,7 +321,9 @@ export function AuthProvider({
         if (!response.ok) {
           return {
             success: false,
+          
             error:
+              data.detail ??
               data.error ??
               "Login failed",
           };

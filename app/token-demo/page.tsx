@@ -6,6 +6,10 @@ import { decodeJwt, decodeProtectedHeader } from "jose";
 
 import { useAuth } from "@/components/AuthProvider";
 
+const AUTH_API_URL =
+  process.env.NEXT_PUBLIC_AUTH_API_URL ??
+  "http://localhost:8000";
+
 function formatRemaining(
   expiresAt: number | null,
   now: number
@@ -88,13 +92,19 @@ export default function TokenDemoPage() {
 
   async function callPythonAuthMe() {
     try {
-      const response = await authFetch(
-        "/api/python-auth/me",
-        {
-          method: "GET",
-          cache: "no-store",
-        }
-      );
+      const response =
+        await authFetch(
+          `${AUTH_API_URL}/auth/me`,
+          {
+            method: "GET",
+          
+            credentials:
+              "include",
+          
+            cache:
+              "no-store",
+          }
+        );
 
       const data = await response.json();
 
@@ -172,7 +182,7 @@ export default function TokenDemoPage() {
             <strong>JTI:</strong>{" "}
             {String(
               decoded?.payload.jti ??
-                "N/A"
+              "N/A"
             )}
           </p>
         </section>
@@ -216,8 +226,8 @@ export default function TokenDemoPage() {
             </strong>{" "}
             {lastRefreshAt
               ? new Date(
-                  lastRefreshAt
-                ).toLocaleTimeString()
+                lastRefreshAt
+              ).toLocaleTimeString()
               : "Not refreshed yet"}
           </p>
 
@@ -242,7 +252,7 @@ export default function TokenDemoPage() {
             </strong>{" "}
             {String(
               decoded?.header.alg ??
-                "N/A"
+              "N/A"
             )}
           </p>
 
@@ -260,7 +270,7 @@ export default function TokenDemoPage() {
             <strong>JTI:</strong>{" "}
             {String(
               decoded?.payload.jti ??
-                "N/A"
+              "N/A"
             )}
           </p>
         </section>
@@ -271,13 +281,13 @@ export default function TokenDemoPage() {
         <h2 className="mb-2 text-xl font-semibold">
           Python Bearer Authorization Demo
         </h2>
-                
+
         <p className="mb-4 text-sm text-gray-500">
           Sends the current access token to the
           Python FastAPI /auth/me endpoint using
           the Authorization Bearer header.
         </p>
-                
+
         <button
           type="button"
           onClick={() =>
@@ -287,13 +297,13 @@ export default function TokenDemoPage() {
         >
           Call Python /auth/me
         </button>
-        
+
         {meResponse !== null && (
           <div className="mt-6">
             <h3 className="mb-3 font-semibold">
               Python API Response
             </h3>
-        
+
             <pre className="max-h-[500px] overflow-auto rounded-xl bg-gray-950 p-5 text-sm text-green-400">
               {JSON.stringify(
                 meResponse,
