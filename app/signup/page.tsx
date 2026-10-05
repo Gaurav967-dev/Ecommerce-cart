@@ -150,7 +150,9 @@ export default function SignUpPage() {
               </label>
 
               <div className="relative">
-                <UserIcon size={20} />
+                <div className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-gray-400">
+                  <UserIcon size={20} />
+                </div>
 
                 <input
                   id="name"
@@ -164,7 +166,7 @@ export default function SignUpPage() {
                     )
                   }
                   required
-                  className="w-full rounded-xl border px-10 py-3 outline-none transition focus:border-black"
+                  className="w-full rounded-xl border py-3 pl-12 pr-4 outline-none transition focus:border-black"
                 />
               </div>
             </div>
@@ -178,7 +180,9 @@ export default function SignUpPage() {
               </label>
 
               <div className="relative">
-                <AtSignIcon size={20} />
+                <div className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-gray-400">
+                  <AtSignIcon size={20} />
+                </div>
 
                 <input
                   ref={emailRef}
@@ -193,7 +197,7 @@ export default function SignUpPage() {
                     )
                   }
                   required
-                  className="w-full rounded-xl border px-10 py-3 outline-none transition focus:border-black"
+                  className="w-full rounded-xl border py-3 pl-12 pr-4 outline-none transition focus:border-black"
                 />
               </div>
             </div>
@@ -207,7 +211,9 @@ export default function SignUpPage() {
               </label>
 
               <div className="relative">
-                <LockIcon size={20} />
+                <div className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-gray-400">
+                  <LockIcon size={20} />
+                </div>
 
                 <input
                   id="password"
@@ -222,7 +228,7 @@ export default function SignUpPage() {
                   }
                   required
                   minLength={6}
-                  className="w-full rounded-xl border px-10 py-3 outline-none transition focus:border-black"
+                  className="w-full rounded-xl border py-3 pl-12 pr-4 outline-none transition focus:border-black"
                 />
               </div>
             </div>
