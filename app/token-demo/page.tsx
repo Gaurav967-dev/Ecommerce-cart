@@ -89,7 +89,7 @@ export default function TokenDemoPage() {
   async function callPythonAuthMe() {
     try {
       const response = await authFetch(
-        "http://localhost:8000/auth/me",
+        "/api/python-auth/me",
         {
           method: "GET",
           cache: "no-store",

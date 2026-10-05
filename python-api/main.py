@@ -6,7 +6,7 @@ import psycopg
 
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, status
-from fastapi.middleware.cors import CORSMiddleware
+# from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt.exceptions import PyJWTError
 from psycopg.rows import dict_row
@@ -43,22 +43,22 @@ app = FastAPI(
 )
 
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
-    allow_credentials=False,
-    allow_methods=[
-        "GET",
-        "OPTIONS",
-    ],
-    allow_headers=[
-        "Authorization",
-        "Content-Type",
-    ],
-)
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=[
+#         "http://localhost:3000",
+#         "http://127.0.0.1:3000",
+#     ],
+#     allow_credentials=False,
+#     allow_methods=[
+#         "GET",
+#         "OPTIONS",
+#     ],
+#     allow_headers=[
+#         "Authorization",
+#         "Content-Type",
+#     ],
+# )
 
 
 bearer_scheme = HTTPBearer(
