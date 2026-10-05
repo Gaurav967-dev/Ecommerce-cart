@@ -40,10 +40,6 @@ type AuthContextType = {
   ) => Promise<Response>;
 };
 
-const PYTHON_API_URL =
-  process.env.NEXT_PUBLIC_PYTHON_API_URL ??
-  "http://localhost:8000";
-
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({
@@ -90,65 +86,71 @@ export function AuthProvider({
     setRefreshTokenExpiresAt(null);
   }, [setNewAccessToken]);
 
-  const fetchCurrentUserFromPython =
-  useCallback(
-    async (
-      token: string
-    ): Promise<User | null> => {
-      try {
-        const response =
-          await fetch(
-            `${PYTHON_API_URL}/auth/me`,
-            {
-              method: "GET",
+  const fetchCurrentUserFromBackend =
+    useCallback(
+      async (
+        token: string
+      ): Promise<User | null> => {
+        try {
+          /*
+           * Browser calls Next.js backend.
+           *
+           * Next.js backend then calls
+           * Python FastAPI on :8000.
+           */
+          const response =
+            await fetch(
+              "/api/python-auth/me",
+              {
+                method: "GET",
 
-              headers: {
-                Authorization:
-                  `Bearer ${token}`,
-              },
+                headers: {
+                  Authorization:
+                    `Bearer ${token}`,
+                },
 
-              cache: "no-store",
-            }
-          );
+                cache: "no-store",
+              }
+            );
 
-        if (!response.ok) {
+          if (!response.ok) {
+            console.error(
+              "Backend auth/me failed:",
+              response.status
+            );
+
+            return null;
+          }
+
+          const data =
+            await response.json();
+
+          if (!data.user) {
+            return null;
+          }
+
+          return {
+            id: String(
+              data.user.id
+            ),
+
+            name:
+              data.user.name,
+
+            email:
+              data.user.email,
+          };
+        } catch (error) {
           console.error(
-            "Python /auth/me failed:",
-            response.status
+            "Unable to load authenticated user:",
+            error
           );
 
           return null;
         }
-
-        const data =
-          await response.json();
-
-        if (!data.user) {
-          return null;
-        }
-
-        return {
-          id: String(
-            data.user.id
-          ),
-
-          name:
-            data.user.name,
-
-          email:
-            data.user.email,
-        };
-      } catch (error) {
-        console.error(
-          "Unable to call Python /auth/me:",
-          error
-        );
-
-        return null;
-      }
-    },
-    []
-  );
+      },
+      []
+    );
 
   const refreshToken =
     useCallback(async (): Promise<boolean> => {
@@ -194,7 +196,7 @@ export function AuthProvider({
             // Load authenticated user
             // from Python backend.
             const backendUser =
-              await fetchCurrentUserFromPython(
+              await fetchCurrentUserFromBackend(
                 data.accessToken
               );
             
@@ -237,7 +239,7 @@ export function AuthProvider({
     }, [
       clearAuth,
       setNewAccessToken,
-      fetchCurrentUserFromPython,
+      fetchCurrentUserFromBackend,
     ]);
 
   useEffect(() => {
@@ -342,7 +344,7 @@ export function AuthProvider({
         // Ask Python backend who
         // this authenticated JWT belongs to.
         const backendUser =
-          await fetchCurrentUserFromPython(
+          await fetchCurrentUserFromBackend(
             data.accessToken
           );
         
@@ -372,7 +374,7 @@ export function AuthProvider({
     },
     [
       setNewAccessToken,
-      fetchCurrentUserFromPython,
+      fetchCurrentUserFromBackend,
       clearAuth,
     ]
   );
