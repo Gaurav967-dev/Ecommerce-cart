@@ -97,6 +97,8 @@ app.add_middleware(
     allow_methods=[
         "GET",
         "POST",
+        "PATCH",
+        "DELETE",
         "OPTIONS",
     ],
 

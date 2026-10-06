@@ -98,8 +98,9 @@ export default function ProfilePage() {
 
         if (!response.ok) {
           setProfileError(
-            data.error ??
-            "Unable to load profile"
+            data.detail ??
+              data.error ??
+              "Unable to load profile"
           );
 
           return;
@@ -219,8 +220,9 @@ export default function ProfilePage() {
 
       if (!response.ok) {
         setProfileError(
-          data.error ??
-          "Unable to update profile"
+          data.detail ??
+            data.error ??
+            "Unable to update profile"
         );
 
         return;
