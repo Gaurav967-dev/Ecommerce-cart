@@ -24,6 +24,10 @@ import {
 import AccountShell from "@/components/AccountShell";
 import { useAuth } from "@/components/AuthProvider";
 
+import {
+  API_BASE_URL,
+} from "@/lib/api";
+
 export default function ProfilePage() {
   const {
     user,
@@ -82,8 +86,9 @@ export default function ProfilePage() {
 
         const response =
           await authFetch(
-            "/api/profile",
+            `${API_BASE_URL}/profile`,
             {
+              credentials: "include",
               cache: "no-store",
             }
           );
@@ -190,9 +195,12 @@ export default function ProfilePage() {
     try {
       const response =
         await authFetch(
-          "/api/profile",
+          `${API_BASE_URL}/profile`,
           {
             method: "PATCH",
+
+            credentials:
+              "include",
 
             headers: {
               "Content-Type":

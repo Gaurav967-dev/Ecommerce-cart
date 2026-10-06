@@ -16,6 +16,10 @@ import {
 
 import AccountShell from "@/components/AccountShell";
 
+import {
+  API_BASE_URL,
+} from "@/lib/api";
+
 type Order = {
   id: string | number;
   order_number: string | null;
@@ -205,8 +209,9 @@ export default function OrdersPage() {
 
       try {
         const response = await authFetch(
-          "/api/orders",
+          `${API_BASE_URL}/orders`,
           {
+            credentials: "include",
             cache: "no-store",
           }
         );

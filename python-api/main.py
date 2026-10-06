@@ -278,39 +278,80 @@ def decode_token(
 
 # COOKIE HELPERS
 
-def set_refresh_cookie(
+def cookie_options():
+    return {
+        "httponly": True,
+        "secure": False,
+        "samesite": "lax",
+        "path": "/",
+    }
+
+
+def set_login_cookies(
     response: Response,
-    token: str,
+    access_token: str,
+    refresh_token: str,
 ):
+    # First login access token snapshot, not used for API authorization.
     response.set_cookie(
-        key=
-            "refresh_token",
+        key="id_token",
+        value=access_token,
+        max_age=ACCESS_TOKEN_TTL_SECONDS,
+        **cookie_options(),
+    )
 
-        value=
-            token,
+    # Current API access token.
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        max_age=ACCESS_TOKEN_TTL_SECONDS,
+        **cookie_options(),
+    )
 
-        httponly=True,
-
-        secure=False,
-
-        samesite="lax",
-
-        path="/",
-
-        max_age=
-            REFRESH_TOKEN_TTL_SECONDS,
+    # Long-lived refresh token.
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        max_age=REFRESH_TOKEN_TTL_SECONDS,
+        **cookie_options(),
     )
 
 
-def clear_refresh_cookie(
-    response: Response
+def rotate_auth_cookies(
+    response: Response,
+    access_token: str,
+    refresh_token: str,
 ):
-    response.delete_cookie(
-        key=
-            "refresh_token",
+    # Do NOT replace id_token here.
+    # It represents the first token from login.
 
-        path="/",
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        max_age=ACCESS_TOKEN_TTL_SECONDS,
+        **cookie_options(),
     )
+
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        max_age=REFRESH_TOKEN_TTL_SECONDS,
+        **cookie_options(),
+    )
+
+
+def clear_auth_cookies(
+    response: Response,
+):
+    for cookie_name in (
+        "id_token",
+        "access_token",
+        "refresh_token",
+    ):
+        response.delete_cookie(
+            key=cookie_name,
+            path="/",
+        )
 
 # ROOT
 
@@ -610,29 +651,28 @@ def login(
                 "Unable to login",
         )
 
-    set_refresh_cookie(
-        response,
-        refresh["token"],
+    set_login_cookies(
+        response=response,
+        access_token=access["token"],
+        refresh_token=refresh["token"],
     )
 
     return {
         "success": True,
 
+        "idToken": access["token"],
+
         "accessToken":
             access["token"],
 
         "accessTokenExpiresAt":
-            access[
-                "expiresAt"
-            ] * 1000,
+            access["expiresAt"] * 1000,
 
         "accessTokenExpiresIn":
             ACCESS_TOKEN_TTL_SECONDS,
 
         "refreshTokenExpiresAt":
-            refresh[
-                "expiresAt"
-            ] * 1000,
+            refresh["expiresAt"] * 1000,
 
         "user": {
             "id":
@@ -869,9 +909,10 @@ def refresh(
                 "Unable to refresh token",
         )
 
-    set_refresh_cookie(
-        response,
-        new_refresh["token"],
+    rotate_auth_cookies(
+        response=response,
+        access_token=new_access["token"],
+        refresh_token=new_refresh["token"],
     )
 
     return {
@@ -974,7 +1015,7 @@ def logout(
             # Invalid/expired token should not prevent logout.
             pass
 
-    clear_refresh_cookie(
+    clear_auth_cookies(
         response
     )
 
@@ -982,43 +1023,59 @@ def logout(
         "success": True
     }
 
-# ME
+# Authorize using access_token
 
-@app.get("/auth/me")
-def auth_me(
-    credentials:
-        Optional[
-            HTTPAuthorizationCredentials
-        ]
-        = Depends(
-            bearer_scheme
-        )
+def get_access_token(
+    request: Request,
+    credentials: Optional[
+        HTTPAuthorizationCredentials
+    ] = Depends(bearer_scheme),
 ):
-    if credentials is None:
-        raise HTTPException(
-            status_code=401,
-
-            detail=
-                "Bearer access token missing",
-        )
-
+    # Prefer explicit Bearer authorization.
     if (
-        credentials.scheme.lower()
-        != "bearer"
+        credentials
+        and credentials.scheme.lower()
+        == "bearer"
     ):
-        raise HTTPException(
-            status_code=401,
+        return {
+            "token":
+                credentials.credentials,
 
-            detail=
-                "Invalid authorization scheme",
+            "source":
+                "bearer",
+        }
+
+    # Otherwise use HttpOnly cookie.
+    cookie_token = (
+        request.cookies.get(
+            "access_token"
         )
-
-    access_token = (
-        credentials.credentials
     )
 
+    if cookie_token:
+        return {
+            "token":
+                cookie_token,
+
+            "source":
+                "cookie",
+        }
+
+    raise HTTPException(
+        status_code=401,
+        detail=
+            "Access token missing",
+    )
+
+# Reusable Authentication Dependency
+
+def require_user(
+    auth=Depends(
+        get_access_token
+    )
+):
     payload = decode_token(
-        access_token,
+        auth["token"],
         "access",
     )
 
@@ -1029,7 +1086,6 @@ def auth_me(
     if not user_sub:
         raise HTTPException(
             status_code=401,
-
             detail=
                 "Token subject missing",
         )
@@ -1045,15 +1101,40 @@ def auth_me(
     ):
         raise HTTPException(
             status_code=401,
-
             detail=
                 "Invalid token subject",
         )
 
+    return {
+        "user_id":
+            user_id,
+
+        "payload":
+            payload,
+
+        "auth_source":
+            auth["source"],
+    }
+
+# ME
+
+@app.get("/auth/me")
+def auth_me(
+    auth=Depends(
+        require_user
+    )
+):
+    user_id = (
+        auth["user_id"]
+    )
+
+    payload = (
+        auth["payload"]
+    )
+
     try:
         with psycopg.connect(
             DATABASE_URL,
-
             row_factory=dict_row,
         ) as connection:
 
@@ -1070,8 +1151,7 @@ def auth_me(
 
                     FROM users
 
-                    WHERE
-                        id = %s
+                    WHERE id = %s
 
                     LIMIT 1
                     """,
@@ -1090,7 +1170,6 @@ def auth_me(
 
         raise HTTPException(
             status_code=500,
-
             detail=
                 "Unable to load user",
         )
@@ -1098,19 +1177,25 @@ def auth_me(
     if not user:
         raise HTTPException(
             status_code=401,
-
-            detail=
-                "User not found",
+            detail="User not found",
         )
 
     return {
         "authenticated": True,
 
         "authorization": {
-            "scheme":
-                credentials.scheme,
+            "source":
+                auth["auth_source"],
 
             "tokenPresent":
+                True,
+        },
+
+        "cookies": {
+            "accessToken":
+                True,
+
+            "idToken":
                 True,
         },
 
@@ -1137,55 +1222,622 @@ def auth_me(
                     if user[
                         "created_at"
                     ]
-
                     else None
                 ),
         },
 
         "jwt": {
             "sub":
-                payload.get(
-                    "sub"
-                ),
+                payload.get("sub"),
 
-            "name":
-                payload.get(
-                    "name"
-                ),
-
-            "email":
-                payload.get(
-                    "email"
-                ),
+            "jti":
+                payload.get("jti"),
 
             "tokenType":
                 payload.get(
                     "tokenType"
                 ),
 
-            "jti":
-                payload.get(
-                    "jti"
-                ),
-
             "iat":
-                payload.get(
-                    "iat"
-                ),
+                payload.get("iat"),
 
             "exp":
-                payload.get(
-                    "exp"
-                ),
+                payload.get("exp"),
 
             "iss":
-                payload.get(
-                    "iss"
-                ),
+                payload.get("iss"),
 
             "aud":
-                payload.get(
-                    "aud"
-                ),
+                payload.get("aud"),
+        },
+    }
+
+# Profile
+
+class ProfileUpdateRequest(
+    BaseModel
+):
+    name: str
+    phone: str = ""
+
+
+@app.get("/profile")
+def get_profile(
+    auth=Depends(
+        require_user
+    )
+):
+    try:
+        with psycopg.connect(
+            DATABASE_URL,
+            row_factory=dict_row,
+        ) as connection:
+
+            with connection.cursor() as cursor:
+
+                cursor.execute(
+                    """
+                    SELECT
+                        id,
+                        name,
+                        email,
+                        phone,
+                        created_at
+
+                    FROM users
+
+                    WHERE id = %s
+
+                    LIMIT 1
+                    """,
+                    (
+                        auth[
+                            "user_id"
+                        ],
+                    ),
+                )
+
+                user = (
+                    cursor.fetchone()
+                )
+
+    except Exception as error:
+        print(
+            "Profile GET error:",
+            error
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=
+                "Unable to load profile",
+        )
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found",
+        )
+
+    return {
+        "user": {
+            "id":
+                str(user["id"]),
+
+            "name":
+                user["name"],
+
+            "email":
+                user["email"],
+
+            "phone":
+                user["phone"]
+                or "",
+
+            "createdAt":
+                user[
+                    "created_at"
+                ].isoformat()
+                if user[
+                    "created_at"
+                ]
+                else None,
+        },
+    }
+
+
+@app.patch("/profile")
+def update_profile(
+    body:
+        ProfileUpdateRequest,
+
+    auth=Depends(
+        require_user
+    ),
+):
+    name = (
+        body.name.strip()
+    )
+
+    phone = (
+        body.phone.strip()
+    )
+
+    if not name:
+        raise HTTPException(
+            status_code=400,
+            detail=
+                "Name is required",
+        )
+
+    if len(name) > 100:
+        raise HTTPException(
+            status_code=400,
+            detail=
+                "Name is too long",
+        )
+
+    if (
+        phone
+        and len(phone) > 20
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=
+                "Invalid phone number",
+        )
+
+    try:
+        with psycopg.connect(
+            DATABASE_URL,
+            row_factory=dict_row,
+        ) as connection:
+
+            with connection.cursor() as cursor:
+
+                cursor.execute(
+                    """
+                    UPDATE users
+
+                    SET
+                        name = %s,
+                        phone = %s
+
+                    WHERE id = %s
+
+                    RETURNING
+                        id,
+                        name,
+                        email,
+                        phone,
+                        created_at
+                    """,
+                    (
+                        name,
+                        phone or None,
+                        auth[
+                            "user_id"
+                        ],
+                    ),
+                )
+
+                user = (
+                    cursor.fetchone()
+                )
+
+    except Exception as error:
+        print(
+            "Profile PATCH error:",
+            error
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=
+                "Unable to update profile",
+        )
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail=
+                "User not found",
+        )
+
+    return {
+        "success": True,
+
+        "user": {
+            "id":
+                str(user["id"]),
+
+            "name":
+                user["name"],
+
+            "email":
+                user["email"],
+
+            "phone":
+                user["phone"]
+                or "",
+
+            "createdAt":
+                user[
+                    "created_at"
+                ].isoformat()
+                if user[
+                    "created_at"
+                ]
+                else None,
+        },
+    }
+
+# Orders
+
+@app.get("/orders")
+def get_orders(
+    auth=Depends(
+        require_user
+    )
+):
+    try:
+        with psycopg.connect(
+            DATABASE_URL,
+            row_factory=dict_row,
+        ) as connection:
+
+            with connection.cursor() as cursor:
+
+                cursor.execute(
+                    """
+                    SELECT
+                        o.id,
+                        o.order_number,
+                        o.total_amount,
+                        o.subtotal,
+                        o.discount_amount,
+                        o.shipping_fee,
+                        o.tax_amount,
+                        o.status,
+                        o.payment_method,
+                        o.payment_status,
+                        o.created_at,
+
+                        COUNT(
+                            oi.id
+                        )::INTEGER
+                            AS item_count,
+
+                        COALESCE(
+                            json_agg(
+                                json_build_object(
+                                    'id',
+                                        oi.id,
+
+                                    'name',
+                                        oi.product_name,
+
+                                    'image',
+                                        oi.product_image,
+
+                                    'quantity',
+                                        oi.quantity
+                                )
+
+                                ORDER BY
+                                    oi.id
+                            )
+                            FILTER (
+                                WHERE
+                                    oi.id
+                                    IS NOT NULL
+                            ),
+
+                            '[]'::json
+                        )
+                        AS preview_items
+
+                    FROM orders o
+
+                    LEFT JOIN
+                        order_items oi
+
+                        ON oi.order_id =
+                            o.id
+
+                    WHERE
+                        o.user_id = %s
+
+                    GROUP BY
+                        o.id
+
+                    ORDER BY
+                        o.created_at
+                        DESC
+                    """,
+                    (
+                        auth[
+                            "user_id"
+                        ],
+                    ),
+                )
+
+                orders = (
+                    cursor.fetchall()
+                )
+
+    except Exception as error:
+        print(
+            "Orders error:",
+            error
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=
+                "Unable to load orders",
+        )
+
+    return {
+        "orders":
+            orders
+    }
+
+# Order Details
+
+@app.get("/orders/{order_id}")
+def get_order(
+    order_id: int,
+    auth=Depends(
+        require_user
+    ),
+):
+    try:
+        with psycopg.connect(
+            DATABASE_URL,
+            row_factory=dict_row,
+        ) as connection:
+
+            with connection.cursor() as cursor:
+
+                cursor.execute(
+                    """
+                    SELECT
+                        id,
+                        order_number,
+                        subtotal,
+                        discount_amount,
+                        shipping_fee,
+                        tax_amount,
+                        total_amount,
+
+                        status,
+
+                        payment_method,
+                        payment_status,
+
+                        shipping_name,
+                        shipping_phone,
+                        shipping_address_line1,
+                        shipping_address_line2,
+                        shipping_city,
+                        shipping_state,
+                        shipping_postal_code,
+                        shipping_country,
+
+                        created_at,
+                        updated_at
+
+                    FROM orders
+
+                    WHERE
+                        id = %s
+                        AND user_id = %s
+
+                    LIMIT 1
+                    """,
+                    (
+                        order_id,
+                        auth[
+                            "user_id"
+                        ],
+                    ),
+                )
+
+                order = (
+                    cursor.fetchone()
+                )
+
+                if not order:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=
+                            "Order not found",
+                    )
+
+                cursor.execute(
+                    """
+                    SELECT
+                        id,
+                        product_id,
+                        product_name,
+                        product_image,
+                        quantity,
+                        unit_price
+
+                    FROM order_items
+
+                    WHERE
+                        order_id = %s
+
+                    ORDER BY id
+                    """,
+                    (
+                        order_id,
+                    ),
+                )
+
+                items = (
+                    cursor.fetchall()
+                )
+
+    except Exception:
+        raise
+
+    except Exception as error:
+        print(
+            "Order detail error:",
+            error
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=
+                "Unable to load order",
+        )
+
+    return {
+        "order": {
+            "id":
+                str(order["id"]),
+
+            "orderNumber":
+                order[
+                    "order_number"
+                ],
+
+            "subtotal":
+                order["subtotal"],
+
+            "discountAmount":
+                order[
+                    "discount_amount"
+                ],
+
+            "shippingFee":
+                order[
+                    "shipping_fee"
+                ],
+
+            "taxAmount":
+                order[
+                    "tax_amount"
+                ],
+
+            "totalAmount":
+                order[
+                    "total_amount"
+                ],
+
+            "status":
+                order["status"],
+
+            "paymentMethod":
+                order[
+                    "payment_method"
+                ],
+
+            "paymentStatus":
+                order[
+                    "payment_status"
+                ],
+
+            "createdAt":
+                order[
+                    "created_at"
+                ],
+
+            "updatedAt":
+                order[
+                    "updated_at"
+                ],
+
+            "shippingAddress": {
+                "name":
+                    order[
+                        "shipping_name"
+                    ],
+
+                "phone":
+                    order[
+                        "shipping_phone"
+                    ],
+
+                "addressLine1":
+                    order[
+                        "shipping_address_line1"
+                    ],
+
+                "addressLine2":
+                    order[
+                        "shipping_address_line2"
+                    ],
+
+                "city":
+                    order[
+                        "shipping_city"
+                    ],
+
+                "state":
+                    order[
+                        "shipping_state"
+                    ],
+
+                "postalCode":
+                    order[
+                        "shipping_postal_code"
+                    ],
+
+                "country":
+                    order[
+                        "shipping_country"
+                    ],
+            },
+
+            "items": [
+                {
+                    "id":
+                        str(item["id"]),
+
+                    "productId":
+                    (
+                        str(
+                            item[
+                                "product_id"
+                            ]
+                        )
+
+                        if item[
+                            "product_id"
+                        ]
+
+                        else None
+                    ),
+
+                    "productName":
+                        item[
+                            "product_name"
+                        ],
+
+                    "productImage":
+                        item[
+                            "product_image"
+                        ],
+
+                    "quantity":
+                        int(
+                            item[
+                                "quantity"
+                            ]
+                        ),
+
+                    "unitPrice":
+                        item[
+                            "unit_price"
+                        ],
+                }
+
+                for item in items
+            ],
         },
     }

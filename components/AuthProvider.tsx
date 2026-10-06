@@ -420,7 +420,12 @@ export function AuthProvider({
 
           return fetch(input, {
             ...init,
+
             headers,
+
+            credentials:
+              init.credentials ??
+              "include",
           });
         };
 

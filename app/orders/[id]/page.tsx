@@ -19,6 +19,10 @@ import { useAuth } from "@/components/AuthProvider";
 
 import AccountShell from "@/components/AccountShell";
 
+import {
+  API_BASE_URL,
+} from "@/lib/api";
+
 type OrderItem = {
   id: string;
 
@@ -223,8 +227,9 @@ export default function OrderDetailsPage() {
       try {
         const response =
           await authFetch(
-            `/api/orders/${orderId}`,
+            `${API_BASE_URL}/orders/${orderId}`,
             {
+              credentials: "include",
               cache: "no-store",
             }
           );
