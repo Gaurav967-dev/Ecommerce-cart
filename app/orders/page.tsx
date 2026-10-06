@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
@@ -108,6 +108,9 @@ export default function OrdersPage() {
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [ordersError, setOrdersError] = useState("");
 
+  const loadedUserRef =
+    useRef<string | null>(null);
+
   const [
     activeFilter,
     setActiveFilter,
@@ -203,6 +206,15 @@ export default function OrdersPage() {
       setOrdersLoading(false);
       return;
     }
+
+    if (
+      loadedUserRef.current === user.id
+    ) {
+      return;
+    }
+
+    loadedUserRef.current =
+      user.id;
 
     async function loadOrders() {
       setOrdersError("");

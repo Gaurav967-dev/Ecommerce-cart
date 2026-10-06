@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -92,6 +93,9 @@ export default function AddressBook() {
   const [form, setForm] =
     useState<AddressForm>(emptyAddress);
 
+  const initialLoadRef =
+    useRef(false);
+
   const loadAddresses = useCallback(
     async () => {
       setLoading(true);
@@ -139,6 +143,15 @@ export default function AddressBook() {
   );
 
   useEffect(() => {
+    if (
+      initialLoadRef.current
+    ) {
+      return;
+    }
+
+    initialLoadRef.current =
+      true;
+      
     void loadAddresses();
   }, [loadAddresses]);
 

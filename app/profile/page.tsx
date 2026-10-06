@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -73,12 +74,24 @@ export default function ProfilePage() {
     setProfileError,
   ] = useState("");
 
+  const loadedUserRef =
+    useRef<string | null>(null);
+
   useEffect(() => {
     if (!user) {
       setProfileLoading(false);
 
       return;
     }
+
+    if (
+      loadedUserRef.current === user.id
+    ) {
+      return;
+    }
+
+    loadedUserRef.current =
+      user.id;
 
     async function loadProfile() {
       try {
@@ -88,8 +101,8 @@ export default function ProfilePage() {
           await authFetch(
             `${API_BASE_URL}/profile`,
             {
-              credentials: "include",
-              cache: "no-store",
+              // credentials: "include",
+              // cache: "no-store",
             }
           );
 
