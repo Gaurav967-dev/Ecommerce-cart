@@ -18,6 +18,10 @@ import {
 
 import { useAuth } from "@/components/AuthProvider";
 
+import {
+  API_BASE_URL,
+} from "@/lib/api";
+
 type Address = {
   id: string | number;
   label: string;
@@ -96,7 +100,7 @@ export default function AddressBook() {
       try {
         const response =
           await authFetch(
-            "/api/addresses",
+            `${API_BASE_URL}/addresses`,
             {
               cache: "no-store",
             }
@@ -107,8 +111,9 @@ export default function AddressBook() {
 
         if (!response.ok) {
           setError(
+            data.detail ??
             data.error ??
-              "Unable to load addresses"
+            "Unable to load addresses"
           );
 
           return;
@@ -223,8 +228,8 @@ export default function AddressBook() {
     try {
       const url =
         editingId !== null
-          ? `/api/addresses/${editingId}`
-          : "/api/addresses";
+          ? `${API_BASE_URL}/addresses/${editingId}`
+          : `${API_BASE_URL}/addresses`;
 
       const response =
         await authFetch(
@@ -251,8 +256,9 @@ export default function AddressBook() {
 
       if (!response.ok) {
         setError(
+          data.detail ??
           data.error ??
-            "Unable to save address"
+          "Unable to save address"
         );
 
         return;
@@ -304,7 +310,7 @@ export default function AddressBook() {
     try {
       const response =
         await authFetch(
-          `/api/addresses/${address.id}`,
+          `${API_BASE_URL}/addresses/${address.id}`,
           {
             method: "DELETE",
           }
@@ -315,8 +321,9 @@ export default function AddressBook() {
 
       if (!response.ok) {
         setError(
+          data.detail ??
           data.error ??
-            "Unable to delete address"
+          "Unable to delete address"
         );
 
         return;
@@ -351,7 +358,7 @@ export default function AddressBook() {
     try {
       const response =
         await authFetch(
-          `/api/addresses/${address.id}`,
+          `${API_BASE_URL}/addresses/${address.id}`,
           {
             method: "PATCH",
 
@@ -398,8 +405,9 @@ export default function AddressBook() {
 
       if (!response.ok) {
         setError(
+          data.detail ??
           data.error ??
-            "Unable to set default address"
+          "Unable to set default address"
         );
 
         return;

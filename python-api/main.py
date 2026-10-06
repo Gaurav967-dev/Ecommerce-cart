@@ -1843,3 +1843,695 @@ def get_order(
             ],
         },
     }
+
+# Addresses
+
+class AddressRequest(BaseModel):
+    label: str = "Home"
+    recipientName: str
+    phone: str
+    addressLine1: str
+    addressLine2: str
+    city: str
+    state: str
+    postalCode: str
+    country: str = "India"
+    isDefault: bool = False
+
+@app.get("/addresses")
+def get_addresses(
+    auth=Depends(
+        require_user
+    )
+):
+    try:
+        with psycopg.connect(
+            DATABASE_URL,
+            row_factory=dict_row,
+        ) as connection:
+
+            with connection.cursor() as cursor:
+
+                cursor.execute(
+                    """
+                    SELECT
+                        id,
+                        label,
+                        recipient_name,
+                        phone,
+                        address_line1,
+                        address_line2,
+                        city,
+                        state,
+                        postal_code,
+                        country,
+                        is_default,
+                        created_at,
+                        updated_at
+
+                    FROM addresses
+
+                    WHERE
+                        user_id = %s
+
+                    ORDER BY
+                        is_default DESC,
+                        created_at DESC
+                    """,
+                    (
+                        auth["user_id"],
+                    ),
+                )
+
+                addresses = (
+                    cursor.fetchall()
+                )
+
+    except Exception as error:
+        print(
+            "Addresses GET error:",
+            error
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=
+                "Unable to load addresses",
+        )
+
+    return {
+        "addresses":
+            addresses
+    }
+
+@app.post(
+    "/addresses",
+    status_code=
+        status.HTTP_201_CREATED,
+)
+def create_address(
+    body: AddressRequest,
+    auth=Depends(
+        require_user
+    ),
+):
+    label = (
+        body.label.strip()
+        or "Home"
+    )
+
+    recipient_name = (
+        body.recipientName
+        .strip()
+    )
+
+    phone = (
+        body.phone.strip()
+    )
+
+    address_line1 = (
+        body.addressLine1
+        .strip()
+    )
+
+    address_line2 = (
+        body.addressLine2
+        .strip()
+    )
+
+    city = (
+        body.city.strip()
+    )
+
+    state_name = (
+        body.state.strip()
+    )
+
+    postal_code = (
+        body.postalCode
+        .strip()
+    )
+
+    country = (
+        body.country.strip()
+    )
+
+    if (
+        not recipient_name
+        or not phone
+        or not address_line1
+        or not city
+        or not state_name
+        or not postal_code
+        or not country
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=
+                "Please complete all required address fields",
+        )
+
+    try:
+        with psycopg.connect(
+            DATABASE_URL,
+            row_factory=dict_row,
+        ) as connection:
+
+            with connection.cursor() as cursor:
+
+                # Lock user's current address rows.
+                cursor.execute(
+                    """
+                    SELECT id
+                    FROM addresses
+                    WHERE user_id = %s
+                    FOR UPDATE
+                    """,
+                    (
+                        auth["user_id"],
+                    ),
+                )
+
+                existing_addresses = (
+                    cursor.fetchall()
+                )
+
+                final_is_default = (
+                    body.isDefault
+                    or len(
+                        existing_addresses
+                    ) == 0
+                )
+
+                if final_is_default:
+                    cursor.execute(
+                        """
+                        UPDATE addresses
+
+                        SET
+                            is_default = FALSE
+                            updated_at = NOW()
+
+                        WHERE
+                            user_id = %s
+                        """,
+                        (
+                            auth[
+                                "user_id"
+                            ],
+                        ),
+                    )
+
+                cursor.execute(
+                    """
+                    INSERT INTO addresses (
+                        user_id,
+                        label,
+                        recipient_name,
+                        phone,
+                        address_line1,
+                        address_line2,
+                        city,
+                        state,
+                        postal_code,
+                        country,
+                        is_default
+                    )
+
+                    VALUES (
+                        %s,
+                        %s,
+                        %s,
+                        %s,
+                        %s,
+                        %s,
+                        %s,
+                        %s,
+                        %s,
+                        %s,
+                        %s
+                    )
+
+                    RETURNING
+                        id,
+                        label,
+                        recipient_name,
+                        phone,
+                        address_line1,
+                        address_line2,
+                        city,
+                        state,
+                        postal_code,
+                        country,
+                        is_default,
+                        created_at,
+                        updated_at
+                    """,
+                    (
+                        auth[
+                            "user_id"
+                        ],
+                        label,
+                        recipient_name,
+                        phone,
+                        address_line1,
+                        address_line2
+                        or None,
+                        city,
+                        state_name,
+                        postal_code,
+                        country,
+                        final_is_default,
+                    ),
+                )
+
+                address = (
+                    cursor.fetchone()
+                )
+
+    except Exception as error:
+        print(
+            "Address POST error:",
+            error
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=
+                "Unable to save address",
+        )
+
+    return {
+        "success": True,
+        "address":
+            address,
+    }
+
+@app.patch(
+    "/addresses/{address_id}"
+)
+def update_address(
+    address_id: int,
+    body: AddressRequest,
+    auth=Depends(
+        require_user
+    ),
+):
+    label = (
+        body.label.strip()
+        or "Home"
+    )
+
+    recipient_name = (
+        body.recipientName
+        .strip()
+    )
+
+    phone = (
+        body.phone.strip()
+    )
+
+    address_line1 = (
+        body.addressLine1
+        .strip()
+    )
+
+    address_line2 = (
+        body.addressLine2
+        .strip()
+    )
+
+    city = (
+        body.city.strip()
+    )
+
+    state_name = (
+        body.state.strip()
+    )
+
+    postal_code = (
+        body.postalCode.strip()
+    )
+
+    country = (
+        body.country.strip()
+    )
+
+    if (
+        not recipient_name
+        or not phone
+        or not address_line1
+        or not city
+        or not state_name
+        or not postal_code
+        or not country
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=
+                "Please complete all required address fields",
+        )
+
+    try:
+        with psycopg.connect(
+            DATABASE_URL,
+            row_factory=dict_row,
+        ) as connection:
+
+            with connection.cursor() as cursor:
+
+                # Verify ownership first.
+                cursor.extends(
+                    """
+                    SELECT
+                        id,
+                        is_default
+
+                    FROM addresses
+
+                    WHERE
+                        id = %s
+                        AND user_id = %s
+
+                    LIMIT 1
+
+                    FOR UPDATE
+                    """,
+                    (
+                        address_id,
+                        auth[
+                            "user_id"
+                        ],
+                    ),
+                )
+
+                existing = (
+                    cursor.fetchone()
+                )
+
+                if not existing:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=
+                            "Address not found",
+                    )
+
+                final_is_default = (
+                    body.isDefault
+                )
+
+                replacement_id = None
+
+                # User is unsetting their current default.
+                if (
+                    existing[
+                        "is_default"
+                    ]
+                    and not
+                    body.isDefault
+                ):
+                    cursor.execute(
+                        """
+                        SELECT id
+
+                        FROM addresses
+
+                        WHERE
+                            user_id = %s
+                            AND id <> %s
+
+                        ORDER BY
+                            created_at DESC
+
+                        LIMIT 1
+
+                        FOR UPDATE
+                        """,
+                        (
+                            auth[
+                                "user_id"
+                            ],
+                            address_id,
+                        ),
+                    )
+
+                    replacement = (
+                        cursor.fetchone()
+                    )
+
+                    if replacement:
+                        replacement_id = (
+                            replacement["id"]
+                        )
+                    else:
+                        # Only saved address.
+                        final_is_default = (
+                            True
+                        )
+
+                # Becoming Default: remove default from others.
+                if final_is_default:
+                    cursor.execute(
+                        """
+                        UPDATE addresses
+
+                        SET
+                            is_default = FALSE,
+                            updated_at = NOW()
+
+                        WHERE
+                            user_id = %s
+                            AND id <> %s
+                        """,
+                        (
+                            auth[
+                                "user_id"
+                            ],
+                            address_id,
+                        ),
+                    )
+
+                # Update current address first.
+                cursor.execute(
+                    """
+                    UPDATE addresses
+
+                    SET
+                        label = %s,
+                        recipient_name = %s,
+                        phone = %s,
+                        address_line1 = %s,
+                        address_line2 = %s,
+                        city = %s,
+                        state = %s,
+                        postal_code = %s,
+                        country = %s,
+                        is_default = %s,
+                        updated_at = NOW()
+
+                    WHERE
+                        id = %s
+                        AND user_id = %s
+
+                    RETURNING
+                        id,
+                        label,
+                        recipient_name,
+                        phone,
+                        address_line1,
+                        address_line2,
+                        city,
+                        state,
+                        postal_code,
+                        country,
+                        is_default,
+                        created_at,
+                        updated_at
+                    """,
+                    (
+                        label,
+                        recipient_name,
+                        phone,
+                        address_line1,
+                        address_line2
+                        or None,
+                        city,
+                        state_name,
+                        postal_code,
+                        country,
+                        final_is_default,
+                        address_id,
+                        auth[
+                            "user_id"
+                        ],
+                    ),
+                )
+
+                updated_address = (
+                    cursor.fetchone()
+                )
+
+                # If old default was removed, make another saved address the new default.
+                if replacement_id:
+                    cursor.execute(
+                        """
+                        UPDATE addresses
+
+                        SET
+                            is_default = True,
+                            updated_at = NOW()
+
+                        WHERE
+                            id = %s
+                            AND user_id = %s
+                        """,
+                        (
+                            replacement_id,
+                            auth[
+                                "user_id"
+                            ],
+                        ),
+                    )
+
+    except HTTPException:
+        raise
+
+    except Exception as error:
+        print(
+            "Address PATCH error:",
+            error
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=
+                "Unable to update address",
+        )
+
+    return {
+        "success": True,
+
+        "address":
+            updated_address,
+    }
+
+@app.delete(
+    "/addresses/{address_id}"
+)
+def delete_address(
+    address_id: int,
+    auth=Depends(
+        require_user
+    ),
+):
+    try:
+        with psycopg.connect(
+            DATABASE_URL,
+            row_factory=dict_row,
+        ) as connection:
+
+            with connection.cursor() as cursor:
+
+                cursor.execute(
+                    """
+                    DELETE FROM addresses
+
+                    WHERE
+                        id = %s
+                        AND user_id = %s
+
+                    RETURNING
+                        id,
+                        is_default
+                    """,
+                    (
+                        address_id,
+                        auth[
+                            "user_id"
+                        ],
+                    ),
+                )
+
+                deleted = (
+                    cursor.fetchone()
+                )
+
+                if not deleted:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=
+                            "Address not found",
+                    )
+
+                # Deleted default? Promote another address.
+                if deleted[
+                    "is_default"
+                ]:
+                    cursor.execute(
+                        """
+                        SELECT id
+
+                        FROM addresses
+
+                        WHERE
+                            user_id = %s
+
+                        ORDER BY
+                            created_at DESC
+
+                        LIMIT 1
+
+                        FOR UPDATE
+                        """,
+                        (
+                            auth[
+                                "user_id"
+                            ],
+                        ),
+                    )
+
+                    replacement = (
+                        cursor.fetchone()
+                    )
+
+                    if replacement:
+                        cursor.execute(
+                            """
+                            UPDATE addresses
+
+                            SET
+                                is_default = TRUE,
+                                created_at = NOW()
+
+                            WHERE
+                                id = %s
+                                AND user_id = %s
+                            """,
+                            (
+                                replacement[
+                                    "id"
+                                ],
+                                auth[
+                                    "user_id"
+                                ],
+                            ),
+                        )
+
+    except HTTPException:
+        raise
+
+    except Exception as error:
+        print(
+            "Address DELETE error:",
+            error
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=
+                "Unable to delete address",
+        )
+
+    return {
+        "success": True
+    }
