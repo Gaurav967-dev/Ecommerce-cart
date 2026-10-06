@@ -298,7 +298,7 @@ def set_login_cookies(
     response.set_cookie(
         key="id_token",
         value=access_token,
-        max_age=ACCESS_TOKEN_TTL_SECONDS,
+        max_age=REFRESH_TOKEN_TTL_SECONDS,
         **cookie_options(),
     )
 
