@@ -1851,7 +1851,7 @@ class AddressRequest(BaseModel):
     recipientName: str
     phone: str
     addressLine1: str
-    addressLine2: str
+    addressLine2: str = ""
     city: str
     state: str
     postalCode: str
@@ -2029,7 +2029,7 @@ def create_address(
                         UPDATE addresses
 
                         SET
-                            is_default = FALSE
+                            is_default = FALSE,
                             updated_at = NOW()
 
                         WHERE
@@ -2201,7 +2201,7 @@ def update_address(
             with connection.cursor() as cursor:
 
                 # Verify ownership first.
-                cursor.extends(
+                cursor.execute(
                     """
                     SELECT
                         id,
@@ -2501,7 +2501,7 @@ def delete_address(
 
                             SET
                                 is_default = TRUE,
-                                created_at = NOW()
+                                updated_at = NOW()
 
                             WHERE
                                 id = %s
