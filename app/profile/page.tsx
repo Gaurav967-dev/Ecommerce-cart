@@ -643,17 +643,15 @@ export default function ProfilePage() {
 
 
             {profileMessage && (
-              <p className="flex items-center gap-2 rounded-2xl bg-green-50 px-4 py-3 text-sm text-green-700">
+              <div className="flex items-center gap-2 rounded-2xl bg-green-50 px-4 py-3 text-sm text-green-700">
 
-                <CheckIcon
-                  size={18}
-                />
+                <CheckIcon size={18} />
 
-                {
-                  profileMessage
-                }
+                <span>
+                  {profileMessage}
+                </span>
 
-              </p>
+              </div>
             )}
 
 
