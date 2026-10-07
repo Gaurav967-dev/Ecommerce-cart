@@ -209,34 +209,6 @@ export default function AccountPage() {
 
       </section>
 
-
-      {/* DEVELOPMENT DEMO */}
-
-      <section className="mt-6 rounded-3xl border border-dashed bg-white p-5">
-
-        <div className="flex flex-wrap items-center justify-between gap-4">
-
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
-              Development Demo
-            </p>
-
-            <p className="mt-1 text-sm font-medium">
-              JWT & Bearer Authorization
-            </p>
-          </div>
-
-          <Link
-            href="/token-demo"
-            className="rounded-full border px-4 py-2 text-sm font-medium transition hover:bg-gray-50"
-          >
-            Open Token Demo
-          </Link>
-
-        </div>
-
-      </section>
-
     </AccountShell>
   );
 }
