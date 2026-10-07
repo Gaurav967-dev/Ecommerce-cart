@@ -183,7 +183,7 @@ export default function OrderDetailsPage() {
   const {
     user,
     loading,
-    authFetch,
+    cookieAuthFetch,
   } = useAuth();
 
 
@@ -226,7 +226,7 @@ export default function OrderDetailsPage() {
 
       try {
         const response =
-          await authFetch(
+          await cookieAuthFetch(
             `${API_BASE_URL}/orders/${orderId}`,
             {
               credentials: "include",
@@ -275,7 +275,7 @@ export default function OrderDetailsPage() {
   }, [
     user,
     orderId,
-    authFetch,
+    cookieAuthFetch,
   ]);
 
 
