@@ -9,13 +9,33 @@ import { useAuth } from "@/components/AuthProvider";
 
 export default function SignInPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, refreshToken } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const [refreshingSession, setRefreshingSession] = useState(false);
+
+  function getDestination() {
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    const callbackUrl =
+      params.get("callbackUrl");
+
+    return (
+      callbackUrl &&
+      callbackUrl.startsWith("/") &&
+      !callbackUrl.startsWith("//")
+        ? callbackUrl
+        : "/account"
+    );
+  }
 
   async function handleSubmit(
     event: React.FormEvent
@@ -35,6 +55,10 @@ export default function SignInPage() {
       return;
     }
 
+    router.replace(
+      getDestination()
+    );
+
     const params = new URLSearchParams(window.location.search);
 
     const callbackUrl = params.get("callbackUrl");
@@ -47,6 +71,28 @@ export default function SignInPage() {
         : "/account";
 
     router.replace(destination);
+  }
+
+  async function handleContinueSession() {
+    setRefreshingSession(true);
+    setError("");
+
+    const success =
+      await refreshToken();
+
+    setRefreshingSession(false);
+
+    if (!success) {
+      setError(
+        "Your session has expired. Please sign in again."
+      );
+
+      return;
+    }
+
+    router.replace(
+      getDestination()
+    );
   }
 
   return (
@@ -122,6 +168,32 @@ export default function SignInPage() {
             {!loading && (
               <ArrowRightIcon size={20} />
             )}
+          </button>
+
+          <div className="my-6 flex items-center gap-3">
+            <div className="h-px flex-1 bg-gray-200" />
+                    
+            <span className="text-xs uppercase tracking-wide text-gray-400">
+              or
+            </span>
+                    
+            <div className="h-px flex-1 bg-gray-200" />
+          </div>
+                    
+          <button
+            type="button"
+            onClick={() =>
+              void handleContinueSession()
+            }
+            disabled={
+              loading ||
+              refreshingSession
+            }
+            className="w-full rounded-xl border py-3 text-sm font-medium transition hover:bg-gray-50 disabled:opacity-50"
+          >
+            {refreshingSession
+              ? "Refreshing Session..."
+              : "Continue Existing Session"}
           </button>
         </form>
 
