@@ -269,37 +269,6 @@ export function AuthProvider({
     };
   }, [refreshToken]);
 
-  useEffect(() => {
-    if (!accessTokenExpiresAt) {
-      return;
-    }
-
-    const REFRESH_EARLY_MS = 5 * 1000;
-
-    const delay =
-      accessTokenExpiresAt -
-      Date.now() -
-      REFRESH_EARLY_MS;
-
-    if (delay <= 0) {
-      void refreshToken();
-      return;
-    }
-
-    const timer = window.setTimeout(
-      () => {
-        void refreshToken();
-      },
-      delay
-    );
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [
-    accessTokenExpiresAt,
-    refreshToken,
-  ]);
 
   const login = useCallback(
     async (
