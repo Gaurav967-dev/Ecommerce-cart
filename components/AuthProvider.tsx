@@ -254,20 +254,69 @@ export function AuthProvider({
   useEffect(() => {
     let active = true;
 
-    const initializeAuth = async () => {
-      await refreshToken();
+    async function initializeAuth() {
+      try {
+        const response =
+          await fetch(
+            `${AUTH_API_URL}/auth/me`,
+            {
+              method: "GET",
+              credentials: "include",
+              cache: "no-store",
+            }
+          );
 
-      if (active) {
-        setLoading(false);
+        if (!active) {
+          return;
+        }
+
+        if (!response.ok) {
+          setUser(null);
+          return;
+        }
+
+        const data =
+          await response.json();
+
+        if (!data.user) {
+          setUser(null);
+          return;
+        }
+
+        setUser({
+          id:
+            String(
+              data.user.id
+            ),
+
+          name:
+            data.user.name,
+
+          email:
+            data.user.email,
+        });
+      } catch (error) {
+        console.error(
+          "Auth initialization failed:",
+          error
+        );
+
+        if (active) {
+          setUser(null);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
       }
-    };
+    }
 
     void initializeAuth();
 
     return () => {
       active = false;
     };
-  }, [refreshToken]);
+  }, []);
 
 
   const login = useCallback(
