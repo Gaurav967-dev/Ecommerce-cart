@@ -301,7 +301,7 @@ export function AuthProvider({
         if (!response.ok) {
           return {
             success: false,
-          
+
             error:
               data.detail ??
               data.error ??
@@ -380,51 +380,34 @@ export function AuthProvider({
         input: RequestInfo | URL,
         init: RequestInit = {}
       ) => {
-        if (!accessTokenRef.current) {
-          await refreshToken();
+        const headers =
+          new Headers(
+            init.headers
+          );
+
+        const token =
+          accessTokenRef.current;
+
+        if (token) {
+          headers.set(
+            "Authorization",
+            `Bearer ${token}`
+          );
         }
 
-        const makeRequest = async () => {
-          const headers =
-            new Headers(init.headers);
-
-          const token =
-            accessTokenRef.current;
-
-          if (token) {
-            headers.set(
-              "Authorization",
-              `Bearer ${token}`
-            );
-          }
-
-          return fetch(input, {
+        return fetch(
+          input,
+          {
             ...init,
-
             headers,
 
             credentials:
               init.credentials ??
               "include",
-          });
-        };
-
-        let response =
-          await makeRequest();
-
-        if (response.status === 401) {
-          const refreshed =
-            await refreshToken();
-
-          if (refreshed) {
-            response =
-              await makeRequest();
           }
-        }
-
-        return response;
+        );
       },
-      [refreshToken]
+      []
     );
 
   const cookieAuthFetch =
@@ -433,38 +416,14 @@ export function AuthProvider({
         input: RequestInfo | URL,
         init: RequestInit = {}
       ) => {
-        const makeRequest = () => {
-          return fetch(
-            input,
-            {
-              ...init,
-            }
-          );
-        };
-
-        let response =
-          await makeRequest();
-
-          /* For checking refresh when intentionally enabled credential cookies. */
-          if (
-            response.status === 401 &&
-            init.credentials ===
-              "include"
-          ) {
-            const refreshed =
-              await refreshToken();
-
-            if (refreshed) {
-              response =
-                await makeRequest();
-            }
+        return fetch(
+          input,
+          {
+            ...init,
           }
-
-          return response;
+        );
       },
-      [
-        refreshToken,
-      ]
+      []
     );
 
   return (
@@ -483,7 +442,7 @@ export function AuthProvider({
         logout,
         refreshToken,
         updateUser,
-        
+
         authFetch,
         cookieAuthFetch,
       }}
