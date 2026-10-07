@@ -102,7 +102,7 @@ function statusClasses(
 }
 
 export default function OrdersPage() {
-  const { user, loading, authFetch } = useAuth();
+  const { user, loading, cookieAuthFetch } = useAuth();
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
@@ -220,11 +220,11 @@ export default function OrdersPage() {
       setOrdersError("");
 
       try {
-        const response = await authFetch(
+        const response = await cookieAuthFetch(
           `${API_BASE_URL}/orders`,
           {
-            credentials: "include",
-            cache: "no-store",
+            // credentials: "include",
+            // cache: "no-store",
           }
         );
 
@@ -247,7 +247,7 @@ export default function OrdersPage() {
     }
 
     void loadOrders();
-  }, [user, authFetch]);
+  }, [user, cookieAuthFetch]);
 
   if (loading) {
     return (

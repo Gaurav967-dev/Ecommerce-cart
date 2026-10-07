@@ -64,7 +64,7 @@ const emptyAddress: AddressForm = {
 };
 
 export default function AddressBook() {
-  const { authFetch } = useAuth();
+  const { cookieAuthFetch } = useAuth();
 
   const [addresses, setAddresses] =
     useState<Address[]>([]);
@@ -103,7 +103,7 @@ export default function AddressBook() {
 
       try {
         const response =
-          await authFetch(
+          await cookieAuthFetch(
             `${API_BASE_URL}/addresses`,
             {
               cache: "no-store",
@@ -139,7 +139,7 @@ export default function AddressBook() {
         setLoading(false);
       }
     },
-    [authFetch]
+    [cookieAuthFetch]
   );
 
   useEffect(() => {
@@ -245,7 +245,7 @@ export default function AddressBook() {
           : `${API_BASE_URL}/addresses`;
 
       const response =
-        await authFetch(
+        await cookieAuthFetch(
           url,
           {
             method:
@@ -322,7 +322,7 @@ export default function AddressBook() {
 
     try {
       const response =
-        await authFetch(
+        await cookieAuthFetch(
           `${API_BASE_URL}/addresses/${address.id}`,
           {
             method: "DELETE",
@@ -370,7 +370,7 @@ export default function AddressBook() {
 
     try {
       const response =
-        await authFetch(
+        await cookieAuthFetch(
           `${API_BASE_URL}/addresses/${address.id}`,
           {
             method: "PATCH",
