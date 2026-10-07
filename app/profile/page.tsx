@@ -33,7 +33,7 @@ export default function ProfilePage() {
   const {
     user,
     loading,
-    authFetch,
+    cookieAuthFetch,
     updateUser,
   } = useAuth();
 
@@ -98,11 +98,11 @@ export default function ProfilePage() {
         setProfileError("");
 
         const response =
-          await authFetch(
+          await cookieAuthFetch(
             `${API_BASE_URL}/profile`,
             {
-              // credentials: "include",
-              // cache: "no-store",
+              credentials: "include",
+              cache: "no-store",
             }
           );
 
@@ -160,7 +160,7 @@ export default function ProfilePage() {
     void loadProfile();
   }, [
     user,
-    authFetch,
+    cookieAuthFetch,
   ]);
 
   if (loading) {
@@ -208,7 +208,7 @@ export default function ProfilePage() {
 
     try {
       const response =
-        await authFetch(
+        await cookieAuthFetch(
           `${API_BASE_URL}/profile`,
           {
             method: "PATCH",

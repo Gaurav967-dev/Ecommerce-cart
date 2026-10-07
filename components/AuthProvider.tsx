@@ -38,6 +38,11 @@ type AuthContextType = {
     input: RequestInfo | URL,
     init?: RequestInit
   ) => Promise<Response>;
+
+  cookieAuthFetch: (
+    input: RequestInfo | URL,
+    init?: RequestInit
+  ) => Promise<Response>;
 };
 
 const AUTH_API_URL =
@@ -447,6 +452,46 @@ export function AuthProvider({
       [refreshToken]
     );
 
+  const cookieAuthFetch =
+    useCallback(
+      async (
+        input: RequestInfo | URL,
+        init: RequestInit = {}
+      ) => {
+        const makeRequest = () => {
+          return fetch(
+            input,
+            {
+              ...init,
+            }
+          );
+        };
+
+        let response =
+          await makeRequest();
+
+          /* For checking refresh when intentionally enabled credential cookies. */
+          if (
+            response.status === 401 &&
+            init.credentials ===
+              "include"
+          ) {
+            const refreshed =
+              await refreshToken();
+
+            if (refreshed) {
+              response =
+                await makeRequest();
+            }
+          }
+
+          return response;
+      },
+      [
+        refreshToken,
+      ]
+    );
+
   return (
     <AuthContext.Provider
       value={{
@@ -463,7 +508,9 @@ export function AuthProvider({
         logout,
         refreshToken,
         updateUser,
+        
         authFetch,
+        cookieAuthFetch,
       }}
     >
       {children}

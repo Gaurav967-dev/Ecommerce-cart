@@ -1124,6 +1124,71 @@ def require_user(
             auth["source"],
     }
 
+def get_cookie_access_token(
+        request: Request
+):
+    access_token = (
+        request.cookies.get(
+            "access_token"
+        )
+    )
+
+    if not access_token:
+        raise HTTPException(
+            status_code=401,
+            detail=
+                "Access token cookie missing",
+        )
+
+    return access_token
+
+def require_cookie_user(
+        access_token: str = Depends(
+            get_cookie_access_token
+        )
+):
+    payload = decode_token(
+        access_token,
+        "access",
+    )
+
+    user_sub = (
+        payload.get("sub")
+    )
+
+    if not user_sub:
+        raise HTTPException(
+            status_code=401,
+            detail=
+                "Token subject missing",
+        )
+
+    try:
+        user_id = int(
+            user_sub
+        )
+
+    except (
+        TypeError,
+        ValueError,
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail=
+                "Invalid token subject"
+        )
+
+    return {
+        "user_id":
+            user_id,
+
+        "payload":
+            payload,
+
+        "auth_source":
+            "access_token_cookie",
+    }
+
 # ME
 
 @app.get("/auth/me")
@@ -1275,7 +1340,7 @@ class ProfileUpdateRequest(
 @app.get("/profile")
 def get_profile(
     auth=Depends(
-        require_user
+        require_cookie_user
     )
 ):
     try:
@@ -1363,7 +1428,7 @@ def update_profile(
         ProfileUpdateRequest,
 
     auth=Depends(
-        require_user
+        require_cookie_user
     ),
 ):
     name = (
@@ -1488,7 +1553,7 @@ def update_profile(
 @app.get("/orders")
 def get_orders(
     auth=Depends(
-        require_user
+        require_cookie_user
     )
 ):
     try:
@@ -1600,7 +1665,7 @@ def get_orders(
 def get_order(
     order_id: int,
     auth=Depends(
-        require_user
+        require_cookie_user
     ),
 ):
     try:
@@ -1870,7 +1935,7 @@ class AddressRequest(BaseModel):
 @app.get("/addresses")
 def get_addresses(
     auth=Depends(
-        require_user
+        require_cookie_user
     )
 ):
     try:
@@ -1941,7 +2006,7 @@ def get_addresses(
 def create_address(
     body: AddressRequest,
     auth=Depends(
-        require_user
+        require_cookie_user
     ),
 ):
     label = (
@@ -2143,7 +2208,7 @@ def update_address(
     address_id: int,
     body: AddressRequest,
     auth=Depends(
-        require_user
+        require_cookie_user
     ),
 ):
     label = (
@@ -2430,7 +2495,7 @@ def update_address(
 def delete_address(
     address_id: int,
     auth=Depends(
-        require_user
+        require_cookie_user
     ),
 ):
     try:
