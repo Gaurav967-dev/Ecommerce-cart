@@ -927,7 +927,7 @@ def refresh(
             new_access["token"],
 
         "refreshToken":
-            refresh_token["token"],
+            new_refresh["token"],
 
         "accessTokenExpiresAt":
             new_access[

@@ -174,7 +174,13 @@ export function AuthProvider({
             );
 
             if (!response.ok) {
-              clearAuth();
+              if (
+                response.status === 401 ||
+                response.status === 403
+              ) {
+                clearAuth();
+              }
+
               return false;
             }
 
