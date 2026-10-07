@@ -223,8 +223,8 @@ export default function OrdersPage() {
         const response = await cookieAuthFetch(
           `${API_BASE_URL}/orders`,
           {
-            // credentials: "include",
-            // cache: "no-store",
+            credentials: "include",
+            cache: "no-store",
           }
         );
 

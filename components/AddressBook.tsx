@@ -106,6 +106,7 @@ export default function AddressBook() {
           await cookieAuthFetch(
             `${API_BASE_URL}/addresses`,
             {
+              credentials: "include",
               cache: "no-store",
             }
           );

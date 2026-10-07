@@ -101,8 +101,8 @@ export default function ProfilePage() {
           await cookieAuthFetch(
             `${API_BASE_URL}/profile`,
             {
-              // credentials: "include",
-              // cache: "no-store",
+              credentials: "include",
+              cache: "no-store",
             }
           );
 
