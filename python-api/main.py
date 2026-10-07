@@ -667,6 +667,9 @@ def login(
         "accessToken":
             access["token"],
 
+        "refreshToken":
+            refresh["token"],
+
         "accessTokenExpiresAt":
             access["expiresAt"] * 1000,
 
@@ -922,6 +925,9 @@ def refresh(
 
         "accessToken":
             new_access["token"],
+
+        "refreshToken":
+            refresh_token["token"],
 
         "accessTokenExpiresAt":
             new_access[
@@ -1194,10 +1200,13 @@ def auth_me(
         },
 
         "cookies": {
+            "idToken":
+                True,
+
             "accessToken":
                 True,
 
-            "idToken":
+            "refreshToken":
                 True,
         },
 
