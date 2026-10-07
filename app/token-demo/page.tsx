@@ -57,6 +57,12 @@ export default function TokenDemoPage() {
   const [meResponse, setMeResponse] =
     useState<unknown>(null);
 
+  const [meStatus, setMeStatus] =
+    useState<number | null>(null);
+
+  const [rotationMessage, setRotationMessage] =
+    useState("");
+
   useEffect(() => {
     const timer = window.setInterval(
       () => {
@@ -90,8 +96,17 @@ export default function TokenDemoPage() {
     }
   }, [accessToken]);
 
+  const accessTokenExpired =
+    Boolean(
+      accessToken &&
+      accessTokenExpiresAt &&
+      now >= accessTokenExpiresAt
+    );
+
   async function callPythonAuthMe() {
     try {
+      setMeStatus(null);
+
       const response =
         await authFetch(
           `${AUTH_API_URL}/auth/me`,
@@ -108,10 +123,15 @@ export default function TokenDemoPage() {
 
       const data = await response.json();
 
+      setMeStatus(
+        response.status
+      );
+
       setMeResponse(data);
 
       console.log(
         "Python /auth/me:",
+        response.status,
         data
       );
     } catch (error) {
@@ -119,6 +139,8 @@ export default function TokenDemoPage() {
         "Python auth/me failed:",
         error
       );
+
+      setMeStatus(null);
 
       setMeResponse({
         error:
@@ -143,6 +165,30 @@ export default function TokenDemoPage() {
     );
   }
 
+  async function handleManualRotation() {
+    setRotationMessage(
+      "Requesting new tokens..."
+    );
+
+    const success =
+      await refreshToken();
+
+    if (success) {
+      setRotationMessage(
+        "New access and refresh tokens issued."
+      );
+
+      setMeResponse(null);
+      setMeStatus(null);
+
+      return;
+    }
+
+    setRotationMessage(
+      "Token rotation failed."
+    );
+  }
+
   return (
     <main className="mx-auto max-w-6xl p-8">
       <h1 className="mb-8 text-3xl font-bold">
@@ -158,17 +204,39 @@ export default function TokenDemoPage() {
 
           <p>
             <strong>Status:</strong>{" "}
-            {accessToken ? "Present" : "Missing"}
+            <span
+              className={
+                !accessToken
+                  ? "font-semibold text-gray-500"
+                  : accessTokenExpired
+                    ? "font-semibold text-red-600"
+                    : "font-semibold text-green-600"
+              }
+            >
+              {!accessToken
+                ? "Missing"
+                : accessTokenExpired
+                  ? "Expired"
+                  : "Valid"}
+            </span>
           </p>
 
           <p>
-            <strong>
-              Expires in:
-            </strong>{" "}
-            {formatRemaining(
-              accessTokenExpiresAt,
-              now
-            )}
+            <strong>Expires in:</strong>{" "}
+            <span
+              className={
+                accessTokenExpired
+                  ? "font-semibold text-red-600"
+                  : ""
+              }
+            >
+              {accessTokenExpired
+                ? "Expired"
+                : formatRemaining(
+                    accessTokenExpiresAt,
+                    now
+                  )}
+            </span>
           </p>
 
           <p>
@@ -232,13 +300,20 @@ export default function TokenDemoPage() {
           </p>
 
           <button
+            type="button"
             onClick={() =>
-              void refreshToken()
+              void handleManualRotation()
             }
             className="rounded-full bg-black px-6 py-3 text-white"
           >
             Rotate Token
           </button>
+
+          {rotationMessage && (
+            <p className="mt-3 text-sm text-gray-500">
+              {rotationMessage}
+            </p>
+          )}
         </section>
 
         <section className="rounded-2xl border p-6">
@@ -303,6 +378,25 @@ export default function TokenDemoPage() {
             <h3 className="mb-3 font-semibold">
               Python API Response
             </h3>
+
+            {meStatus && (
+              <div
+                className={`mb-4 rounded-xl px-4 py-3 text-sm font-semibold ${
+                  meStatus >= 200 &&
+                  meStatus < 300
+                    ? "bg-green-50 text-green-700"
+                    : "bg-red-50 text-green-700"
+                }`}
+              >
+                HTTP {meStatus}{" "}
+
+                {meStatus === 200
+                  ? "Authorized"
+                  : meStatus === 401
+                    ? "Unauthorized"
+                    : "Request failed"}
+              </div>
+            )}
 
             <pre className="max-h-[500px] overflow-auto rounded-xl bg-gray-950 p-5 text-sm text-green-400">
               {JSON.stringify(
